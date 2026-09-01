@@ -97,12 +97,12 @@
 
 | 层级 | 建议技术 |
 |---|---|
-| 前端 | Vue 3、Vite、Element Plus、Axios；增强功能需要图表时再引入 ECharts |
-| 后端 | Java 17、Spring Boot 3、Spring Security、JWT、MyBatis-Plus |
-| 数据库 | MySQL 8 |
+| 前端 | Node.js 24 LTS、Vue 3.5、Vite 8；业务开发时按需引入 Element Plus、Axios |
+| 后端 | Java 21、Spring Boot 3.5；认证阶段引入 Spring Security、JWT 和 MyBatis-Plus |
+| 数据库 | MySQL 8.4 LTS、Flyway |
 | 接口文档 | RESTful API、OpenAPI/Swagger |
 | 构建与版本管理 | Maven、Git、GitHub |
-| 部署 | Docker Compose；无法容器化时使用本机 Java + MySQL 演示 |
+| 部署 | 默认使用本机 Java + MySQL；Docker Compose 仅作为可选路径 |
 
 ### 4.1 系统结构
 

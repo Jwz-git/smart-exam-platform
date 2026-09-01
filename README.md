@@ -15,26 +15,30 @@
 
 增强功能仅在核心验收用例全部通过后开发。
 
-## 建议技术栈
+## 技术栈
 
 | 部分 | 技术 |
 |---|---|
-| 前端 | Vue 3、Vite、Element Plus、Axios |
-| 后端 | Java 17、Spring Boot 3、Spring Security、JWT、MyBatis-Plus |
-| 数据库 | MySQL 8 |
+| 前端 | Node.js 24 LTS、Vue 3.5、TypeScript 6、Vite 8 |
+| 后端 | Java 21、Spring Boot 3.5、Maven 3.9 |
+| 数据库 | MySQL 8.4 LTS、Flyway |
 | 接口文档 | OpenAPI / Swagger |
-| 部署 | Docker Compose 或本地 Java + MySQL |
+| 本地运行 | 本机 Java + MySQL；Docker Compose 可选 |
 
-技术栈在工程骨架落地前仍属于建议方案，实际版本应以项目构建文件为准。
+精确依赖版本以 `backend/pom.xml` 和 `frontend/package-lock.json` 为准。
 
 ## 仓库现状
 
-阶段 0 已完成，当前进入“阶段 1：需求、设计与工程骨架”；尚未创建前后端代码工程。
+当前处于“阶段 1：需求、设计与工程骨架”，设计文档和前后端工程骨架已建立，正在完成数据库迁移验证。
 
 | 文件 | 用途 |
 |---|---|
 | [`plan.md`](plan.md) | 项目范围、架构、动态协作方式、排期和验收标准 |
 | [`docs/requirements-analysis.md`](docs/requirements-analysis.md) | 9 月 1 日需求分析、核心用例和竞品参考 |
+| [`docs/technical-design.md`](docs/technical-design.md) | 版本基线、目录、配置策略和架构边界 |
+| [`docs/prototype.md`](docs/prototype.md) | 页面结构、核心页面草图和交互状态 |
+| [`docs/database-design.md`](docs/database-design.md) | ER 关系、数据约束和迁移策略 |
+| [`docs/api.md`](docs/api.md) | REST API 清单、响应和错误约定 |
 | [`软件开发实践2_文字整理.md`](软件开发实践2_文字整理.md) | 课程要求原始整理 |
 | [`AGENTS.md`](AGENTS.md) | AI 协作规则和项目现状台账 |
 
@@ -45,6 +49,31 @@
 - 每个阶段必须有可复核的完成证据，例如测试输出、接口响应或运行截图。
 - 代码、文档和 `AGENTS.md` 中的项目现状应保持同步。
 
-## 开始开发
+## 本机启动
 
-具体启动命令将在前后端工程建立后补充。开始任何实现任务前，请先阅读 [`AGENTS.md`](AGENTS.md) 和 [`plan.md`](plan.md)。
+要求安装 Java 21 或更高版本、Maven 3.9、Node.js 24 LTS 和 MySQL 8.4。Docker 不是必需项。
+
+首次创建本地数据库：
+
+```bash
+mysql -uroot -p < database/bootstrap-local.sql
+```
+
+终端一启动后端，Flyway 会自动执行尚未运行的迁移：
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+终端二启动前端：
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+后端健康检查地址为 `http://localhost:8080/api/health`，前端开发地址默认为 `http://localhost:5173`。若本地数据库配置不同，复制 `.env.example` 中相应变量到自己的终端环境或 `.env`，不要提交真实密码。
+
+已安装 Docker 的成员也可用 `docker compose up -d db` 代替本机 MySQL，但这不是团队统一前置要求。

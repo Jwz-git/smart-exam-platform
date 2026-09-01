@@ -18,18 +18,18 @@
 |---|---|---|
 | 仓库 | 已初始化，默认分支为 `main`，已配置 GitHub 远端 | `.git/`、`git remote -v` |
 | 需求与计划 | 已完成 9 月 1 日需求分析，明确角色、流程、MVP、用例、竞品参考和动态认领协作方式 | `plan.md`、`docs/requirements-analysis.md` |
-| 后端 | 未初始化 | 尚无后端构建文件或源码目录 |
-| 前端 | 未初始化 | 尚无前端构建文件或源码目录 |
-| 数据库 | 未设计落盘 | 尚无迁移脚本或 schema 文件 |
-| 自动化测试 | 未建立 | 尚无测试配置和测试源码 |
-| 部署 | 未建立 | 尚无容器或部署配置 |
-| 文档 | 已有课程原文、计划、README 和 AI 协作规范 | 仓库根目录 Markdown 文件 |
+| 后端 | 已建立可启动的 Spring Boot 3.5 骨架和健康检查 | `backend/pom.xml`、`SmartExamApplication.java`、`HealthController.java` |
+| 前端 | 已建立可启动的 Vue 3 + TypeScript + Vite 骨架 | `frontend/package.json`、`frontend/src/App.vue` |
+| 数据库 | 已形成 ER 设计和 Flyway V1 迁移；无 Docker 的本机初始化路径已验证 | `docs/database-design.md`、`V1__init_schema.sql`、`database/bootstrap-local.sql` |
+| 自动化测试 | 已建立两端骨架测试 | 后端 MockMvc 1 项、前端 Vitest 1 项 |
+| 部署 | 已提供本机 MySQL 默认路径和可选 Compose 数据库 | `README.md`、`.env.example`、`compose.yaml` |
+| 文档 | 已有需求、技术方案、页面原型、数据库和 REST API 首版文档 | `docs/`、仓库根目录 Markdown 文件 |
 
-**当前阶段：** 阶段 1——需求、设计与工程骨架。
+**当前阶段：** 阶段 2——认证、权限与题库。
 
-**下一步：** 固定最终技术版本和目录结构，形成页面原型、数据库首版迁移与 REST API 清单，并创建可启动的前后端工程骨架。
+**下一步：** 实现三类角色账号、登录与 JWT 鉴权，再完成知识点和四类题目的增删改查及筛选。
 
-**最近更新：** 2026-09-01，补齐并复核 9 月 1 日需求分析交付物。
+**最近更新：** 2026-09-01，完成设计方案、详细设计首版和可启动工程骨架，并验证无 Docker 启动路径。
 
 ## 3. 工作方式
 
@@ -63,21 +63,21 @@
 
 ### 阶段 1：需求、设计与工程骨架
 
-**状态：进行中**
+**状态：已完成**
 
-- [ ] 固定 Java、Spring Boot、Node.js、Vue 和 MySQL 版本
-- [ ] 确定前后端目录结构和本地配置策略
-- [ ] 形成页面/流程原型说明
-- [ ] 形成数据库 ER 设计与首版迁移脚本
-- [ ] 形成 REST API 清单和统一响应约定
-- [ ] 创建可启动的后端、前端工程
-- [ ] 提供 `.env.example` 或等价的无敏感配置示例
+- [x] 固定 Java、Spring Boot、Node.js、Vue 和 MySQL 版本
+- [x] 确定前后端目录结构和本地配置策略
+- [x] 形成页面/流程原型说明
+- [x] 形成数据库 ER 设计与首版迁移脚本
+- [x] 形成 REST API 清单和统一响应约定
+- [x] 创建可启动的后端、前端工程
+- [x] 提供 `.env.example` 或等价的无敏感配置示例
 
 **完成标准：** 前后端可独立启动，数据库可从迁移脚本初始化，接口契约可供两人并行开发。
 
 ### 阶段 2：认证、权限与题库
 
-**状态：未开始**
+**状态：进行中**
 
 - [ ] 实现管理员、教师、学生账号和角色权限
 - [ ] 实现登录、退出、JWT 鉴权和密码安全存储
@@ -170,6 +170,12 @@
 ## 7. 工作记录
 
 > 新记录置顶。只记录实质变更；每条必须包含日期、内容、验证和下一步。
+
+### 2026-09-01：完成设计方案与工程骨架
+
+- **内容：** 固定 Java 21、Spring Boot 3.5.16、Node.js 24 LTS、Vue 3.5、Vite 8 和 MySQL 8.4 LTS；新增技术方案、页面原型、ER 设计、REST API 契约、Flyway V1 迁移和无 Docker 的本机数据库初始化脚本；建立 Spring Boot 与 Vue 工程骨架。Docker Compose 仅保留为可选路径。
+- **验证：** `mvn test` 通过（1 项）；前端类型检查、Lint、Vitest（1 项）和生产构建通过；在本机 MySQL 空库执行初始化后，Flyway V1 成功并创建 10 张表，`GET /api/health` 返回 `status=UP`；`docker compose config` 通过。当前机器实际数据库为 MySQL 9.6，项目基线 8.4 的迁移仍应在共享或验收环境再次回归。
+- **下一步：** 进入阶段 2，先实现用户种子数据、Spring Security、JWT 登录与角色鉴权，再实现知识点和题库 CRUD。
 
 ### 2026-09-01：补齐 9 月 1 日需求分析交付物
 

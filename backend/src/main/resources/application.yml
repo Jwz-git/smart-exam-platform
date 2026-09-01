@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: smart-exam-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_exam?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+    username: ${DB_USERNAME:smart_exam}
+    password: ${DB_PASSWORD:smart_exam_dev}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+server:
+  port: ${SERVER_PORT:8080}
