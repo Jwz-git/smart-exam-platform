@@ -28,11 +28,14 @@
 | 系统 | `GET /api/health` | 公开 | 骨架健康检查 |
 | 认证 | `POST /api/v1/auth/login` | 公开 | 登录并取得令牌 |
 | 认证 | `GET /api/v1/auth/me` | 已登录 | 当前用户信息 |
+| 认证 | `POST /api/v1/auth/logout` | 已登录 | 无状态退出，客户端删除令牌 |
 | 用户 | `GET /api/v1/users` | 管理员 | 分页查询用户 |
 | 用户 | `POST /api/v1/users` | 管理员 | 新增用户 |
 | 用户 | `PATCH /api/v1/users/{id}/status` | 管理员 | 启用或禁用 |
 | 知识点 | `GET /api/v1/knowledge-points` | 教师 | 查询知识点 |
 | 知识点 | `POST /api/v1/knowledge-points` | 教师 | 新增知识点 |
+| 知识点 | `PUT /api/v1/knowledge-points/{id}` | 创建者教师 | 编辑知识点 |
+| 知识点 | `DELETE /api/v1/knowledge-points/{id}` | 创建者教师 | 未被题目引用时删除 |
 | 题目 | `GET /api/v1/questions` | 教师 | 按关键词、题型、难度、知识点筛选 |
 | 题目 | `POST /api/v1/questions` | 教师 | 新增题目 |
 | 题目 | `GET /api/v1/questions/{id}` | 教师 | 题目详情 |
@@ -59,7 +62,16 @@
 
 ## 3. 关键幂等与冲突规则
 
+- JWT 访问令牌默认有效期为 60 分钟。退出接口返回 `204`，客户端必须删除令牌；当前 MVP 不维护令牌撤销名单，已签发令牌在过期前仍具备密码学有效性。
+
 - 同一学生重复开始同一考试时返回现有未提交答卷；若已提交则返回 `409 SUBMISSION_ALREADY_SUBMITTED`。
 - 重复交卷不再次计分，返回 `409 SUBMISSION_ALREADY_SUBMITTED`。
 - 发布试卷、考试或成绩时状态不满足，返回 `409 INVALID_STATE_TRANSITION`。
 - 前端不得依赖按钮隐藏实现权限；所有角色、资源归属和业务状态由后端再次校验。
+
+## 4. 题目答案约定
+
+- 单选题和多选题必须至少包含两个唯一选项，标准答案为选项键 JSON 数组；单选题数组长度必须为 1。
+- 判断题不包含选项，标准答案为 JSON 布尔值。
+- 简答题不包含选项，标准答案为非空 JSON 字符串。
+- 教师只能查询、查看、修改和删除自己创建的题目；删除已被试卷引用的题目时改为停用，保留历史数据。

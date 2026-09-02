@@ -29,7 +29,7 @@
 
 ## 仓库现状
 
-当前处于“阶段 1：需求、设计与工程骨架”，设计文档和前后端工程骨架已建立，正在完成数据库迁移验证。
+阶段 2“认证、权限与题库”已完成，当前进入阶段 3“试卷、考试与答题”。现有系统支持三类账号登录、JWT 鉴权、教师知识点与四类题目管理及筛选，并提供登录和教师题库页面。
 
 | 文件 | 用途 |
 |---|---|
@@ -53,27 +53,29 @@
 
 要求安装 Java 21 或更高版本、Maven 3.9、Node.js 24 LTS 和 MySQL 8.4。Docker 不是必需项。
 
-首次创建本地数据库：
+推荐在仓库根目录执行一键初始化。脚本会生成不提交到 Git 的 `.env` 随机 JWT 密钥、创建本地数据库、安装前端依赖、运行两端测试和构建，并执行 Flyway 迁移：
 
 ```bash
-mysql -uroot -p < database/bootstrap-local.sql
+./scripts/init-local.sh
 ```
 
-终端一启动后端，Flyway 会自动执行尚未运行的迁移：
+脚本会提示输入 MySQL 管理员密码。它不会把管理员密码写入文件。初始化后，终端一启动后端：
 
 ```bash
-cd backend
-mvn spring-boot:run
+set -a
+source .env
+set +a
+mvn -f backend/pom.xml spring-boot:run
 ```
 
 终端二启动前端：
 
 ```bash
-cd frontend
-npm ci
-npm run dev
+npm --prefix frontend run dev
 ```
 
 后端健康检查地址为 `http://localhost:8080/api/health`，前端开发地址默认为 `http://localhost:5173`。若本地数据库配置不同，复制 `.env.example` 中相应变量到自己的终端环境或 `.env`，不要提交真实密码。
+
+Flyway V2 会创建 `admin`、`teacher`、`student` 三个本地演示账号，初始密码均为 `ExamDemo123!`。这些账号只用于课程演示，非演示环境必须更换或禁用。
 
 已安装 Docker 的成员也可用 `docker compose up -d db` 代替本机 MySQL，但这不是团队统一前置要求。

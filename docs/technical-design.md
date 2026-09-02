@@ -38,7 +38,7 @@ smart-exam-platform/
 
 - 默认使用本机 MySQL 8.4，不要求安装 Docker。首次运行以管理员身份执行 `mysql -uroot -p < database/bootstrap-local.sql` 创建开发库和受限账号。
 - `docker compose up -d db` 只是已安装 Docker 时的可选替代路径；容器数据写入命名卷，不提交仓库。
-- 后端从环境变量读取数据库地址、账号和密码，开发默认值仅用于本地容器。
+- 后端从环境变量读取数据库地址、账号、密码和 `JWT_SECRET`；JWT 密钥至少 32 字节且没有可提交的运行默认值。
 - 前端只读取以 `VITE_` 开头的公开构建变量，不得写入数据库密码或 JWT 密钥。
 - `.env`、`application-local.*` 和其他本地配置被 Git 忽略；可提交的示例统一写在 `.env.example`。
 - 浏览器只访问 `/api`；开发服务器把 `/api` 代理到后端，生产环境由同源反向代理转发。
@@ -67,4 +67,4 @@ flowchart LR
 
 已确定：版本基线、目录、配置来源、模块边界、REST/JSON、MySQL/Flyway、Vue SPA。
 
-待后续实现时确定：JWT 库与令牌时效、MyBatis-Plus 精确版本、分页组件字段映射、生产部署域名与 HTTPS 终止方式。未确定项不得写成已实现。
+认证实现采用 Spring Security Resource Server 与 Nimbus JOSE（由 Spring Boot 依赖管理），HS256 访问令牌默认有效期 60 分钟。待后续实现时确定：MyBatis-Plus 精确版本、分页组件字段映射、生产部署域名与 HTTPS 终止方式。未确定项不得写成已实现。
