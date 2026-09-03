@@ -44,7 +44,6 @@
 | 试卷 | `GET /api/v1/papers` | 教师 | 查询本人试卷 |
 | 试卷 | `POST /api/v1/papers` | 教师 | 创建草稿并选题 |
 | 试卷 | `GET /api/v1/papers/{id}` | 教师 | 预览试卷 |
-| 试卷 | `PUT /api/v1/papers/{id}` | 教师 | 编辑草稿 |
 | 试卷 | `POST /api/v1/papers/{id}/publish` | 教师 | 校验并发布试卷 |
 | 考试 | `GET /api/v1/exams` | 教师/学生 | 按角色查询考试 |
 | 考试 | `POST /api/v1/exams` | 教师 | 基于已发布试卷创建考试 |
@@ -66,10 +65,18 @@
 
 - 同一学生重复开始同一考试时返回现有未提交答卷；若已提交则返回 `409 SUBMISSION_ALREADY_SUBMITTED`。
 - 重复交卷不再次计分，返回 `409 SUBMISSION_ALREADY_SUBMITTED`。
+- 后端每 30 秒扫描一次已到截止时间且仍在答题的答卷，并在事务内自动交卷、判定客观题；该机制不依赖浏览器保持打开。
 - 发布试卷、考试或成绩时状态不满足，返回 `409 INVALID_STATE_TRANSITION`。
 - 前端不得依赖按钮隐藏实现权限；所有角色、资源归属和业务状态由后端再次校验。
 
-## 4. 题目答案约定
+## 4. 试卷、考试与答卷请求约定
+
+- 创建试卷必须提交 `name`、`durationMinutes`、`totalScore` 和非空 `questions`；每项题目包含 `questionId`、`score`，分值合计必须严格等于总分。
+- 创建考试必须引用本人已发布试卷，并提交 `name`、`paperId`、`startAt`、`endAt`；结束时间必须晚于开始时间且仍在未来。
+- 保存答案使用 `{"answers":[{"paperQuestionId":1,"answerContent":["A"]}]}`；判断题答案为布尔值，简答题答案为字符串。
+- 试卷题目在创建时保存题干、选项、答案、解析和题型快照，之后修改题库不会改变历史试卷。
+
+## 5. 题目答案约定
 
 - 单选题和多选题必须至少包含两个唯一选项，标准答案为选项键 JSON 数组；单选题数组长度必须为 1。
 - 判断题不包含选项，标准答案为 JSON 布尔值。

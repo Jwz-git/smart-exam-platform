@@ -51,6 +51,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/knowledge-points/**", "/api/v1/questions/**").hasRole("TEACHER")
+                        .requestMatchers("/api/v1/papers/**").hasRole("TEACHER")
+                        .requestMatchers("/api/v1/submissions/**").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/exams/**").hasAnyRole("TEACHER", "STUDENT")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))

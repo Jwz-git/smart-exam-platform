@@ -23,7 +23,11 @@ class QuestionBankIntegrationTest {
 
     @BeforeEach
     void clearQuestionBank() {
+        jdbc.update("DELETE FROM submission_answer");
+        jdbc.update("DELETE FROM submission");
+        jdbc.update("DELETE FROM exam");
         jdbc.update("DELETE FROM paper_question");
+        jdbc.update("DELETE FROM paper");
         jdbc.update("DELETE FROM question_option");
         jdbc.update("DELETE FROM question");
         jdbc.update("DELETE FROM knowledge_point");
