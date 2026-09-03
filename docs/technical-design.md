@@ -2,16 +2,16 @@
 
 ## 1. 版本基线
 
-| 组件 | 固定版本 | 选择依据 |
-|---|---:|---|
-| Java | 21 | LTS 版本；通过 Maven `release=21` 固定目标字节码 |
-| Spring Boot | 3.5.16 | 3.x 稳定维护线，兼顾课程资料和后续 MyBatis-Plus 兼容性 |
-| Maven | 3.9.13 | 本机构建版本；项目最低要求 3.9 |
-| Node.js | 24 LTS | Node 官方 LTS 线；前端 `engines` 固定最低 24.12 |
-| Vue | 3.5.x | Vue 3 稳定线，由 `package-lock.json` 锁定实际安装版本 |
-| Vite | 8.x | `create-vue` 当前稳定脚手架生成版本 |
-| TypeScript | 6.x | `create-vue` 当前稳定脚手架生成版本 |
-| MySQL | 8.4 LTS | MySQL 长期支持线；两位成员均可直接本机安装 |
+| 组件 | 项目基线 |
+|---|---:|
+| Java | 21 |
+| Spring Boot | 3.5.16 |
+| Maven | 3.9+ |
+| Node.js | 24 LTS；实际兼容范围以 `frontend/package.json` 的 `engines` 为准 |
+| Vue | 3.5.x |
+| Vite | 8.x |
+| TypeScript | 6.x |
+| MySQL | 8.4 LTS |
 
 精确依赖以 `backend/pom.xml` 和 `frontend/package-lock.json` 为准。升级依赖必须先通过后端测试及前端类型检查、Lint、单元测试和生产构建。
 
@@ -23,16 +23,14 @@ smart-exam-platform/
 │   ├── src/main/java/          业务源码
 │   ├── src/main/resources/     配置与 Flyway 迁移
 │   └── src/test/               后端测试
-├── frontend/                   Vue 单页应用
-│   ├── src/                    页面、路由、状态和接口客户端
-│   └── public/                 静态资源
+├── frontend/                   Vue 单页应用与接口客户端
 ├── docs/                       需求、原型、数据库和 API 文档
 ├── database/                   本机 MySQL 初始化入口
 ├── compose.yaml                可选的 MySQL 容器入口
 └── .env.example               无敏感信息的配置示例
 ```
 
-后端后续按业务模块分包，每个模块内部再分 controller、service、repository、model，避免仅按技术层形成跨模块的大目录。建议模块：`auth`、`user`、`question`、`paper`、`exam`、`submission`、`grading`、`common`。
+后端按 `auth`、`user`、`question`、`exam`、`system`、`common` 业务模块组织；模块内包含接口、服务、持久化和模型。
 
 ## 3. 运行与配置策略
 
@@ -63,8 +61,8 @@ flowchart LR
 - Repository 只负责持久化访问；数据库唯一约束是防重复提交的最终保障。
 - API 不直接暴露数据库实体，使用请求/响应 DTO，避免历史字段变化破坏契约。
 
-## 5. 已确定与待确定
+## 5. 已确定边界
 
 已确定：版本基线、目录、配置来源、模块边界、REST/JSON、MySQL/Flyway、Vue SPA。
 
-认证实现采用 Spring Security Resource Server 与 Nimbus JOSE（由 Spring Boot 依赖管理），HS256 访问令牌默认有效期 60 分钟。待后续实现时确定：MyBatis-Plus 精确版本、分页组件字段映射、生产部署域名与 HTTPS 终止方式。未确定项不得写成已实现。
+认证使用 Spring Security Resource Server、Nimbus JOSE 和 HS256，访问令牌默认有效期 60 分钟。数据访问使用 Spring JDBC。生产域名与 HTTPS 终止方式尚未确定。

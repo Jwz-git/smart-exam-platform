@@ -1,4 +1,6 @@
-# REST API 契约（MVP 首版）
+# REST API 契约
+
+本表同时包含已实现接口和已确认待实现接口；真实完成状态以 [`AGENTS.md`](../AGENTS.md) 为准。
 
 ## 1. 通用约定
 
@@ -25,7 +27,7 @@
 
 | 模块 | 方法与路径 | 角色 | 用途 |
 |---|---|---|---|
-| 系统 | `GET /api/health` | 公开 | 骨架健康检查 |
+| 系统 | `GET /api/health` | 公开 | 健康检查 |
 | 认证 | `POST /api/v1/auth/login` | 公开 | 登录并取得令牌 |
 | 认证 | `GET /api/v1/auth/me` | 已登录 | 当前用户信息 |
 | 认证 | `POST /api/v1/auth/logout` | 已登录 | 无状态退出，客户端删除令牌 |
@@ -50,14 +52,16 @@
 | 考试 | `POST /api/v1/exams/{id}/publish` | 教师 | 发布考试 |
 | 考试 | `GET /api/v1/exams/{id}` | 教师/可参加学生 | 查看考试信息 |
 | 答卷 | `POST /api/v1/exams/{id}/submissions` | 学生 | 开始答卷 |
+| 答卷 | `GET /api/v1/submissions/{id}` | 答卷本人/考试教师 | 查看答卷；按角色和公布状态裁剪敏感字段 |
 | 答卷 | `PUT /api/v1/submissions/{id}/answers` | 答卷本人 | 保存当前答案 |
 | 答卷 | `POST /api/v1/submissions/{id}/submit` | 答卷本人 | 事务交卷并判客观题 |
 | 阅卷 | `GET /api/v1/exams/{id}/grading` | 考试教师 | 待阅卷列表 |
 | 阅卷 | `PUT /api/v1/submission-answers/{id}/score` | 考试教师 | 简答题评分与评语 |
 | 成绩 | `POST /api/v1/exams/{id}/publish-results` | 考试教师 | 全部批完后公布成绩 |
-| 成绩 | `GET /api/v1/exams/{id}/results` | 考试教师 | 成绩列表与基础统计 |
+| 成绩 | `GET /api/v1/exams/{id}/results` | 考试教师 | 排名、平均分、最高分和最低分 |
 | 成绩 | `GET /api/v1/my/results` | 学生 | 本人已公布成绩 |
 | 成绩 | `GET /api/v1/my/results/{submissionId}` | 答卷本人 | 本人成绩详情 |
+| AI 出题 | `POST /api/v1/ai/question-drafts` | 教师 | 通过 DeepSeek 生成题目草稿，不直接入库 |
 
 ## 3. 关键幂等与冲突规则
 
@@ -68,12 +72,15 @@
 - 后端每 30 秒扫描一次已到截止时间且仍在答题的答卷，并在事务内自动交卷、判定客观题；该机制不依赖浏览器保持打开。
 - 发布试卷、考试或成绩时状态不满足，返回 `409 INVALID_STATE_TRANSITION`。
 - 前端不得依赖按钮隐藏实现权限；所有角色、资源归属和业务状态由后端再次校验。
+- 成绩公布前，学生响应不得包含得分、标准答案、解析、评语或排名；公布后仍只能读取本人答卷。
+- 排名只统计已评分的有效答卷，按总分降序采用 `1、2、2、4` 的竞赛排名。
 
 ## 4. 试卷、考试与答卷请求约定
 
 - 创建试卷必须提交 `name`、`durationMinutes`、`totalScore` 和非空 `questions`；每项题目包含 `questionId`、`score`，分值合计必须严格等于总分。
 - 创建考试必须引用本人已发布试卷，并提交 `name`、`paperId`、`startAt`、`endAt`；结束时间必须晚于开始时间且仍在未来。
 - 保存答案使用 `{"answers":[{"paperQuestionId":1,"answerContent":["A"]}]}`；判断题答案为布尔值，简答题答案为字符串。
+- 返回进行中答卷时包含已保存答案，以支持刷新或重新进入后恢复。
 - 试卷题目在创建时保存题干、选项、答案、解析和题型快照，之后修改题库不会改变历史试卷。
 
 ## 5. 题目答案约定
@@ -82,3 +89,9 @@
 - 判断题不包含选项，标准答案为 JSON 布尔值。
 - 简答题不包含选项，标准答案为非空 JSON 字符串。
 - 教师只能查询、查看、修改和删除自己创建的题目；删除已被试卷引用的题目时改为停用，保留历史数据。
+
+## 6. DeepSeek 草稿约定
+
+- 请求包含知识点、题型、难度和补充要求；响应使用现有题目字段，但不创建题目。
+- 教师编辑并确认后，仍通过题目新增接口和现有业务校验保存。
+- `DEEPSEEK_API_KEY` 仅由后端读取；未配置、超时、限流、空内容或非法 JSON 返回可读错误，不影响手工出题。

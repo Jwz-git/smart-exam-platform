@@ -29,6 +29,6 @@ erDiagram
 
 ## 3. 迁移策略
 
-首版结构位于 `backend/src/main/resources/db/migration/V1__init_schema.sql`，由 Flyway 在后端启动时执行。后续结构变更只能新增 `V2__...sql` 等迁移，不修改已经在共享环境执行过的迁移。
+结构迁移位于 `backend/src/main/resources/db/migration/`：V1 创建业务表，V2 创建演示账号。后续变更从 V3 起新增迁移，不修改已执行文件。
 
 空数据库验证标准：启动 MySQL 8.4 后运行应用，Flyway 成功创建表和 `flyway_schema_history`，重复启动不重复建表。
