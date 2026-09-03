@@ -14,6 +14,12 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+/**
+ * 题库与知识点的集成测试，对应验收用例 1「教师新增不同题型的题目并按条件查询」。
+ *
+ * <p>覆盖四条规则：知识点的归属校验、四种基础题型的创建与筛选、
+ * 题目编辑与删除、以及未登录和非教师角色的访问拦截。
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class QuestionBankIntegrationTest {
@@ -21,6 +27,12 @@ class QuestionBankIntegrationTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired JdbcTemplate jdbc;
 
+    /**
+     * 每个测试前清空业务数据。
+     *
+     * <p>删除顺序必须从最下游的表开始（答案 → 答卷 → 考试 → 试卷题目 → 试卷 → 选项 → 题目 → 知识点），
+     * 否则会撞上外键约束。账号表不清，它由 data.sql 提供且各测试共用。
+     */
     @BeforeEach
     void clearQuestionBank() {
         jdbc.update("DELETE FROM submission_answer");
@@ -33,6 +45,7 @@ class QuestionBankIntegrationTest {
         jdbc.update("DELETE FROM knowledge_point");
     }
 
+    /** 知识点可增改删；非创建者修改返回 403，验证资源归属校验生效。 */
     @Test
     void managesKnowledgePointsAndEnforcesOwnership() throws Exception {
         String teacher = login("teacher");
@@ -49,6 +62,7 @@ class QuestionBankIntegrationTest {
                 .andExpect(status().isNoContent());
     }
 
+    /** 四种基础题型都能创建，且按题型、难度、知识点组合筛选时只命中预期的一条。 */
     @Test
     void createsFourTypesAndFiltersQuestions() throws Exception {
         String token = login("teacher");
@@ -68,6 +82,12 @@ class QuestionBankIntegrationTest {
                 .andExpect(jsonPath("$.data.items[0].stem").value("判断题"));
     }
 
+    /**
+     * 题目可编辑；标准答案指向不存在的选项时返回 400；未被试卷引用的题目可真删。
+     *
+     * <p>最后一步查询返回 404 说明确实做了物理删除——如果题目已被试卷引用，
+     * 这里应该变成停用并仍能查到，那条规则由组卷相关测试覆盖。
+     */
     @Test
     void updatesDeletesAndRejectsInvalidQuestion() throws Exception {
         String token = login("teacher");
@@ -87,12 +107,14 @@ class QuestionBankIntegrationTest {
         mockMvc.perform(get("/api/v1/questions/{id}", id).header("Authorization", "Bearer " + token)).andExpect(status().isNotFound());
     }
 
+    /** 未登录访问返回 401，学生访问教师接口返回 403，对应验收用例 8。 */
     @Test
     void rejectsUnauthenticatedAndStudentAccess() throws Exception {
         mockMvc.perform(get("/api/v1/questions")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/questions").header("Authorization", "Bearer " + login("student"))).andExpect(status().isForbidden());
     }
 
+    /** 建一个知识点并返回其 ID。 */
     private long createPoint(String token, String name) throws Exception {
         String response = mockMvc.perform(post("/api/v1/knowledge-points").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"" + name + "\"}"))
@@ -100,6 +122,7 @@ class QuestionBankIntegrationTest {
         return objectMapper.readTree(response).at("/data/id").asLong();
     }
 
+    /** 建一道题并返回其 ID。 */
     private long createQuestion(String token, String content) throws Exception {
         String response = mockMvc.perform(post("/api/v1/questions").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content(content))
@@ -107,12 +130,14 @@ class QuestionBankIntegrationTest {
         return objectMapper.readTree(response).at("/data/id").asLong();
     }
 
+    /** 拼题目请求体。手写 JSON 而不是构造对象，这样测试里能一眼看出实际发出去的报文长什么样。 */
     private String questionJson(String type, String stem, String answer, long pointId, String options) {
         return "{\"type\":\"" + type + "\",\"stem\":\"" + stem
                 + "\",\"difficulty\":\"MEDIUM\",\"standardAnswer\":" + answer
                 + ",\"suggestedScore\":10.0,\"knowledgePointId\":" + pointId + ",\"options\":" + options + "}";
     }
 
+    /** 以指定账号登录并返回访问令牌，演示账号密码统一为 ExamDemo123!。 */
     private String login(String username) throws Exception {
         String response = mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"ExamDemo123!\"}"))

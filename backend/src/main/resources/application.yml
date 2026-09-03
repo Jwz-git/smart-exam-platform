@@ -2,7 +2,7 @@ spring:
   application:
     name: smart-exam-backend
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_exam?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_exam?useUnicode=true&characterEncoding=utf8&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
     username: ${DB_USERNAME:smart_exam}
     password: ${DB_PASSWORD:smart_exam_dev}
   flyway:
@@ -12,6 +12,15 @@ app:
   security:
     jwt-secret: ${JWT_SECRET}
     access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:60}
+  # AI 辅助出题。密钥默认为空，表示未启用；此时只有出题接口不可用，其余功能照常。
+  # protocol=openai 时 base-url 要带到版本段（如 .../v1），anthropic 时只到域名，详见 docs/api.md 第 8 节。
+  ai:
+    protocol: ${AI_PROTOCOL:openai}
+    base-url: ${AI_BASE_URL:https://api.deepseek.com/v1}
+    model: ${AI_MODEL:deepseek-chat}
+    api-key: ${AI_API_KEY:}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:60}
+    max-tokens: ${AI_MAX_TOKENS:2048}
 management:
   endpoints:
     web:

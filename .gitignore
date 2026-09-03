@@ -49,9 +49,17 @@ playwright-report/
 .DS_Store
 Thumbs.db
 
+# Images outside documentation
+*.png
+!docs/**/*.png
+
+# Browser automation artifacts
+.playwright-mcp/
+
 # Local runtime data
 data/
 uploads/
 tmp/
 *.pid
 
+.playwright-mcp/

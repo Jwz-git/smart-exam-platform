@@ -1,0 +1,430 @@
+/*
+ * 全局样式与设计令牌。
+ *
+ * 取值全部对照 docs/images/界面原型设计.png：蓝色主色、深色侧栏、方角卡片、表格式列表。
+ * 只有这一个全局样式文件，组件内的 <style scoped> 仅用于该组件独有的布局；
+ * 颜色、圆角、控件高度这类需要跨页面一致的值一律走下面的 CSS 变量，
+ * 避免同一个蓝色在不同页面出现几种写法。
+ */
+:root {
+  /* 主色。按钮、选中态、文字链和当前侧栏项都用它 */
+  --brand: #2563eb;
+  --brand-dark: #1d4ed8;
+  --brand-soft: #eff4fe;
+  /* 深色侧栏与其顶部品牌区 */
+  --sidebar: #16233c;
+  --sidebar-head: #101b30;
+  --sidebar-text: #a9b5cc;
+  /* 页面底色、卡片、分隔线、表头 */
+  --page: #f4f6fa;
+  --card: #ffffff;
+  --line: #e3e8f0;
+  --line-soft: #edf0f5;
+  --head: #f5f7fb;
+  /* 正文与次要文字 */
+  --text: #1f2a37;
+  --muted: #6b7280;
+  /* 语义色：启用绿、停用与交卷红 */
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+  /* 圆角、阴影与布局尺寸。原型整体偏方，圆角只取 4px */
+  --radius: 4px;
+  --shadow: 0 1px 3px rgb(16 33 61 / 8%);
+  --sidebar-width: 208px;
+  --topbar-height: 52px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 360px;
+  background: var(--page);
+  color: var(--text);
+  font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+
+h1, h2, h3, h4, p, ol, ul { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/*
+ * 按钮。四种形态覆盖全部场景：
+ * .btn 次要操作、.btn-primary 主操作、.btn-danger 交卷等高风险操作、.btn-link 表格内文字链。
+ * 统一 32px 高，与输入框和下拉框对齐，横排时不会出现高低不齐。
+ */
+/* ---------- 按钮 ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* 悬停只改边框和文字色，不改背景：表格里按钮密集，整块变色会显得很吵 */
+.btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-danger:hover:not(:disabled) { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+/* 大号按钮目前只用于学生端的「交卷」，需要足够显眼且不易误点 */
+.btn-lg { height: 44px; padding: 0 32px; font-size: 16px; font-weight: 600; }
+/* 文字链按钮：表格「操作」列用它，视觉上是链接但语义上是按钮，键盘可聚焦 */
+.btn-link {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  cursor: pointer;
+}
+.btn-link:hover { text-decoration: underline; }
+.btn-link.danger { color: var(--danger); }
+
+/* ---------- 表单 ---------- */
+/* .input-icon 用于把图标叠在输入框内部（登录页的账号和密码框）：
+   容器相对定位，图标绝对定位到左侧，输入框用 padding-left 让出空间。 */
+.field { display: grid; gap: 6px; }
+.field > span { color: var(--muted); }
+/*
+ * 表单控件基线样式。两点都是踩过的坑：
+ * 1. 用 `input` 而不是逐个列举 input[type='text']：属性选择器只匹配显式写出的 type，
+ *    <input> 省略 type 时会完全漏掉样式（登录页账号框曾因此只有密码框一半宽、边框也不同）。
+ * 2. 整条规则包在 :where() 里把优先级降为 0，后面按类名做的微调（.input-icon input 的
+ *    左内边距、.score-input 的窄宽度、.filter-bar input 的自适应宽度）才能稳定生效，
+ *    不需要靠书写顺序或叠加 :not() 去比优先级。
+ */
+:where(.control, select, textarea, input:not([type='checkbox'], [type='radio'])) {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d5dbe5;
+  border-radius: var(--radius);
+  background: #fff;
+  outline: none;
+}
+
+/* 勾选框保持浏览器默认尺寸，只统一外边距，避免 flex 行里左右不对称。 */
+:where(input[type='checkbox'], input[type='radio']) { margin: 0; }
+/* 多行输入要撑开高度，且只允许纵向拉伸，横向拉伸会破坏栅格布局 */
+textarea { height: auto; min-height: 76px; padding: 8px 10px; resize: vertical; }
+.control:focus, input:focus, select:focus, textarea:focus { border-color: var(--brand); }
+.input-icon { position: relative; }
+.input-icon > svg:first-child {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9aa4b5;
+  pointer-events: none;
+}
+.input-icon input { padding-left: 34px; }
+.input-icon .suffix {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: none;
+  color: #9aa4b5;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+}
+
+/*
+ * 卡片与表格。原型里所有列表都是表格式：浅色表头、细分隔线、悬停高亮。
+ * .state-on / .state-off 对应「启用」绿字和「停用」红字；.tag 是关键词标签的小色块。
+ */
+/* ---------- 卡片与表格 ---------- */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-pad { padding: 16px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line-soft); }
+.table th { background: var(--head); color: #4b5563; font-weight: 600; white-space: nowrap; }
+/* 行悬停底色很浅：题库表格行数多，对比过强会让人眼花 */
+.table tbody tr:hover { background: #fafbfd; }
+.table .num { text-align: right; }
+.table .ops { white-space: nowrap; }
+.table .ops .sep { color: var(--line); margin: 0 8px; }
+.cell-strong { color: var(--text); }
+.tag-list { display: flex; gap: 4px; flex-wrap: wrap; }
+.tag {
+  padding: 1px 7px;
+  border-radius: 2px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 12px;
+}
+.state-on { color: var(--success); }
+.state-off { color: var(--danger); }
+/* 空数据占位。给足内边距，避免表格塌缩成一条细线 */
+.empty { padding: 48px 0; text-align: center; color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* ---------- 分页 ---------- */
+/* 对应原型题库页底部：共 N 条 + 每页条数下拉 + 页码。总数用 margin-right:auto 推到最左，
+   其余元素自然靠右，不需要额外的定位。 */
+.pager { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--line-soft); }
+.pager .total { color: var(--muted); margin-right: auto; }
+.pager select { width: auto; height: 28px; }
+.pager .pages { display: flex; gap: 4px; }
+.pager .pages button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+}
+.pager .pages button.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+.pager .pages button:disabled { cursor: not-allowed; color: #c2c9d4; }
+.pager .pages .gap { border: 0; background: none; cursor: default; color: var(--muted); }
+
+/*
+ * 布局骨架：侧栏固定宽度 + 内容区自适应的两列网格。
+ * .main 上的 min-width:0 是必需的——网格子项默认最小宽度是内容宽度，
+ * 少了它，内容区里的宽表格会把整个页面撑出横向滚动条。
+ */
+/* ---------- 布局骨架 ---------- */
+.layout { display: grid; grid-template-columns: var(--sidebar-width) 1fr; min-height: 100vh; }
+.sidebar { background: var(--sidebar); color: var(--sidebar-text); display: flex; flex-direction: column; }
+.sidebar .brand {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: var(--sidebar-head);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sidebar nav { padding: 10px 0; display: grid; gap: 2px; }
+.sidebar nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar nav button:hover { background: rgb(255 255 255 / 6%); color: #fff; }
+/* 当前项整块填充主色，对应原型侧栏的蓝色高亮条 */
+.sidebar nav button.active { background: var(--brand); color: #fff; }
+.sidebar nav button svg { flex: none; opacity: 0.9; }
+.main { display: flex; flex-direction: column; min-width: 0; }
+.topbar {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.topbar .crumbs { color: var(--muted); }
+.topbar .crumbs b { color: var(--text); font-weight: 500; }
+.topbar .account { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+/* 头像占位：取姓名首字，浅色底 + 主色字，不需要准备图片资源 */
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+.content { padding: 20px; display: grid; gap: 16px; align-content: start; }
+.page-head { display: flex; align-items: center; gap: 12px; }
+.page-head h2 { font-size: 19px; }
+.page-head .spacer { margin-left: auto; }
+.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.filter-bar label { display: flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+/* 筛选栏里的控件按内容自适应宽度，不吃满整行；min-width 保证下拉框不会窄到看不清选项 */
+.filter-bar select, .filter-bar input { width: auto; min-width: 120px; }
+.alert { padding: 9px 12px; border-radius: var(--radius); }
+/* 成功与失败提示。用底色 + 同色系边框，比纯文字更容易在长页面里被注意到 */
+.alert.error { background: #fef2f2; border: 1px solid #fecaca; color: #b42318; }
+.alert.ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+
+/* ---------- 遮罩弹窗 ---------- */
+/* 题目表单和试卷预览共用。限制最大高度并让内容区滚动，
+   这样字段再多也不会把页头页脚顶出视口。 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgb(16 33 61 / 45%);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 20;
+}
+.modal { width: min(680px, 100%); max-height: 88vh; overflow: auto; background: #fff; border-radius: 6px; }
+.modal header, .modal footer { display: flex; align-items: center; gap: 10px; padding: 14px 18px; }
+.modal header { border-bottom: 1px solid var(--line); font-size: 16px; font-weight: 600; }
+.modal footer { border-top: 1px solid var(--line); justify-content: flex-end; }
+.modal .body { padding: 18px; display: grid; gap: 14px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ---------- 登录页 ---------- */
+/* 左右等分两栏：左侧蓝色渐变插画区，右侧表单。窄屏时隐藏插画只留表单。 */
+.login-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--page); }
+.login-frame {
+  width: min(1000px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 12px 40px rgb(16 33 61 / 14%);
+}
+.login-art {
+  background: linear-gradient(160deg, #2f7bf6 0%, #1d5fdb 60%, #1a4fc4 100%);
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+.login-form { padding: 56px 48px; display: grid; gap: 18px; align-content: center; }
+.login-form h1 { font-size: 24px; text-align: center; margin-bottom: 10px; }
+.login-form .btn { height: 40px; }
+.login-hint { color: var(--muted); font-size: 13px; text-align: center; }
+
+/* ---------- 组卷穿梭 ---------- */
+/* 三列网格：候选区、移动按钮、试卷内容。试卷内容略宽（1.15fr），因为它多了分值和操作两列。
+   两侧列表都限制最大高度并各自滚动，避免页面整体被拉得很长。 */
+.compose { display: grid; grid-template-columns: 1fr auto 1.15fr; gap: 14px; align-items: start; }
+.compose .move { display: grid; gap: 10px; padding-top: 90px; }
+.compose .move button { width: 34px; height: 30px; }
+.panel-title { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.panel-title h3 { font-size: 14px; }
+.panel-title .spacer { margin-left: auto; color: var(--muted); }
+.scroll-y { max-height: 340px; overflow: auto; }
+.score-input { width: 62px; height: 26px; padding: 0 6px; text-align: right; }
+.compose-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.sum-ok { color: var(--success); font-weight: 600; }
+.sum-bad { color: var(--danger); font-weight: 600; }
+
+/*
+ * 学生答题页。整页独立布局，没有侧栏。
+ * .choice 让整行选项可点击而不是只有小圆点可点；选中态用主色边框加浅色底，
+ * 比只靠原生 radio 的小圆点更容易看清当前选了哪个。
+ * .nav-grid 的三种状态（默认 / .done 已答 / .current 当前）与图例一一对应。
+ */
+/* ---------- 学生答题 ---------- */
+.exam-page { min-height: 100vh; display: flex; flex-direction: column; background: var(--page); }
+.exam-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 22px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.exam-bar h2 { font-size: 17px; margin-right: auto; }
+.exam-bar .clock { display: flex; align-items: center; gap: 6px; color: var(--brand); font-weight: 600; }
+/* 最后一分钟倒计时转红，配合前端在归零时自动交卷 */
+.exam-bar .clock.urgent { color: var(--danger); }
+/* tabular-nums 让数字等宽，倒计时逐秒变化时不会左右抖动 */
+.exam-bar .clock b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.exam-body { display: grid; grid-template-columns: 1fr 260px; gap: 16px; padding: 16px 22px; align-items: start; }
+.section-title { padding: 12px 18px; background: var(--head); border-bottom: 1px solid var(--line); font-weight: 600; }
+.question-area { padding: 18px; display: grid; gap: 14px; min-height: 280px; align-content: start; }
+.question-area .stem { font-size: 15px; line-height: 1.7; }
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+/* 悬停与选中共用同一套视觉，降低学生误判「有没有选上」的概率 */
+.choice:hover { border-color: var(--brand); background: var(--brand-soft); }
+.choice.picked { border-color: var(--brand); background: var(--brand-soft); }
+.choice input { width: auto; height: auto; }
+.question-nav-foot { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--line); }
+.question-nav-foot .btn { flex: 1; }
+.nav-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 12px 14px; color: var(--muted); font-size: 12px; }
+.nav-legend span { display: flex; align-items: center; gap: 5px; }
+.swatch { width: 12px; height: 12px; border: 1px solid var(--line); border-radius: 2px; display: inline-block; }
+.swatch.done { background: var(--success); border-color: var(--success); }
+.swatch.current { border: 2px solid var(--brand); }
+.nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 0 14px 14px; }
+.nav-grid button {
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  cursor: pointer;
+}
+.nav-grid button.done { background: var(--success); border-color: var(--success); color: #fff; }
+.nav-grid button.current { border: 2px solid var(--brand); color: var(--brand); font-weight: 600; }
+/* 已答且是当前题：保留绿底表示已答，边框换成主色表示「你在这」 */
+.nav-grid button.done.current { background: var(--success); color: #fff; border-color: var(--brand); }
+.exam-side { display: grid; gap: 16px; }
+
+/* ---------- 阅卷、成绩与用户管理 ---------- */
+/* .modal-wide 只放宽宽度：答卷详情要并排显示题干、作答和标准答案，680px 会频繁折行。
+   .stat-row 用 auto-fit 而不是固定列数，指标数量从 4 个变到 6 个时不用改样式。
+   .answer-line 用 grid 而不是 flex，让「学生作答 / 标准答案 / 解析」几行的标签列左对齐。 */
+.modal-wide { width: min(960px, 100%); }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.stat {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--head);
+}
+.stat span { color: var(--muted); font-size: 12px; }
+.stat b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.stat b.cell-strong { color: var(--brand); }
+.answer-card { display: grid; gap: 8px; }
+.answer-card .stem { font-size: 14px; line-height: 1.7; font-weight: 600; }
+.option-list { display: grid; gap: 4px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.answer-line { display: grid; grid-template-columns: 76px 1fr auto; gap: 10px; align-items: baseline; font-size: 13px; }
+.answer-line .label { color: var(--muted); }
+/* 评分框横排一行：分数窄、评语占满剩余宽度，保存按钮和状态贴在末尾 */
+.grade-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px dashed var(--brand);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+}
+
+/* 响应式收敛：中屏把三列穿梭和答题双栏改为单列，小屏把侧栏收成图标条。
+   课程要求只保证最新版 Chrome 桌面端，这里只做到「窄窗口不错版」，不追求移动端体验。 */
+@media (max-width: 1024px) {
+  .compose { grid-template-columns: 1fr; }
+  .compose .move { grid-auto-flow: column; justify-content: center; padding: 0; }
+  .exam-body { grid-template-columns: 1fr; }
+  .login-frame { grid-template-columns: 1fr; }
+  .login-art { display: none; }
+}
+@media (max-width: 720px) {
+  .layout { grid-template-columns: 64px 1fr; }
+  .sidebar .brand span, .sidebar nav button span { display: none; }
+  .sidebar nav button { justify-content: center; }
+}

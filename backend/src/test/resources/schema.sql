@@ -1,11 +1,25 @@
+-- H2 内存库在整个测试 JVM 内共享（DB_CLOSE_DELAY=-1），而 Spring 每建一个新的应用上下文
+-- 都会重跑一次本脚本。因此脚本必须可重复执行：先按外键反序删掉全部表，再重建。
+-- 少了这一步，第二个上下文（例如用 @MockitoBean 替换 Bean 的测试类）会在
+-- 「表已存在」处中断初始化，data.sql 不再执行，之后所有测试都会因为查不到账号而 401。
+DROP TABLE IF EXISTS submission_answer;
+DROP TABLE IF EXISTS submission;
+DROP TABLE IF EXISTS exam;
+DROP TABLE IF EXISTS paper_question;
+DROP TABLE IF EXISTS paper;
+DROP TABLE IF EXISTS question_option;
+DROP TABLE IF EXISTS question;
+DROP TABLE IF EXISTS knowledge_point;
 DROP TABLE IF EXISTS app_user;
+
 CREATE TABLE app_user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(64) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     display_name VARCHAR(64) NOT NULL,
     role VARCHAR(16) NOT NULL,
-    status VARCHAR(16) NOT NULL
+    status VARCHAR(16) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE knowledge_point (
@@ -20,6 +34,7 @@ CREATE TABLE question (
     type VARCHAR(32) NOT NULL,
     stem CLOB NOT NULL,
     difficulty VARCHAR(16) NOT NULL,
+    tags VARCHAR(200),
     standard_answer CLOB NOT NULL,
     explanation CLOB,
     suggested_score DECIMAL(6,1) NOT NULL,

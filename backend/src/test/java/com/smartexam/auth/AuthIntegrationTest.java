@@ -15,6 +15,16 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+/**
+ * 认证与鉴权的集成测试，覆盖 {@code plan.md} 第 7.2 节验收用例 8 的 401/403 路径。
+ *
+ * <p>用 {@link SpringBootTest} 启动完整上下文并配合 MockMvc：这里要验证的正是
+ * 安全过滤器链、令牌解析和数据库回查的协作效果，任何一层被替换成模拟对象都会让
+ * 测试失去意义。
+ *
+ * <p>测试数据来自 {@code src/test/resources/data.sql}，其中包含正常的三类角色账号、
+ * 第二名教师（用于越权场景）和一个被停用的学生。
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthIntegrationTest {

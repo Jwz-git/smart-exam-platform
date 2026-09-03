@@ -12,3 +12,11 @@ app:
   security:
     jwt-secret: test-only-secret-that-is-longer-than-32-bytes
     access-token-minutes: 60
+  # 测试不访问真实 AI 服务：AiClient 会被测试里的桩替换掉，这里的值只用于属性绑定。
+  ai:
+    protocol: openai
+    base-url: https://ai.invalid/v1
+    model: test-model
+    api-key: test-only-key
+    timeout-seconds: 5
+    max-tokens: 512

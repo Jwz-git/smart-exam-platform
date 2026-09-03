@@ -30,7 +30,13 @@ smart-exam-platform/
 └── .env.example               无敏感信息的配置示例
 ```
 
-后端按 `auth`、`user`、`question`、`exam`、`system`、`common` 业务模块组织；模块内包含接口、服务、持久化和模型。
+后端按 `auth`、`user`、`question`、`exam`、`ai`、`stats`、`system`、`common` 业务模块组织；模块内包含接口、服务、持久化和模型。
+
+`ai` 模块只依赖 `question` 的校验入口，不直连数据库：它把模型输出组装成题目请求后交给 `QuestionService` 校验，保存仍走题目新增接口。协议适配（OpenAI 兼容 / Anthropic Messages）与 HTTP 超时配置分成 `RestAiClient` 和 `AiHttpConfig` 两处，前者只管「拼请求、取文本」，后者只管连接参数，测试可以替换其中任意一层。
+
+`stats` 模块同样是只读的上层模块：单场考试的平均分、最高分、及格率和排名直接调用 `GradingService#results`，因此「谁能看这场考试」的归属校验和成绩口径都只有一处实现，成绩管理页与统计分析页不可能出现两套数字。它自己只负责两件独有的事——把已评完的总分分桶成分布，把逐题作答聚合成正确率；聚合放在 Java 而不是 SQL，原因是「是否留空」要判断 JSON 内容，MySQL 与 H2 的 JSON 函数不通用。
+
+`system` 模块除健康检查外提供只读的系统设置：返回当前进程真正生效的运行参数，用于现场核对环境，响应不含任何密钥、密码或连接串。
 
 ## 3. 运行与配置策略
 
