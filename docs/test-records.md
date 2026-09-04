@@ -92,7 +92,7 @@ python3 scripts/comment-ratio.py     # 注释比例核对
 | Flyway 在 MySQL 8.4 上从空库执行 | V1—V4 已在本机 **MySQL 9.6** 实测应用成功（`flyway_schema_history` 现为 v4），但不是从空库、也不是 8.4 | 9.6 通过不等于 8.4 通过；Flyway 11.7 也提示「9.6 未经测试」。仍需在 MySQL 8.4 的空库上完整跑一次 V1—V4 |
 | 统计分析的数据库差异 | 已在真实 MySQL 9.6 上核对：题型/难度/知识点分布、五段成绩分布与逐题正确率均与界面一致 | 统计 SQL 全部使用 `COUNT(CASE WHEN ...)` 这类标准写法，未用 MySQL 专有函数 |
 | 自动化测试的数据库 | 只跑 H2 手写 schema，不执行 Flyway | H2 与 MySQL 的差异（ENUM、JSON、CHECK）不会被测试发现；改动迁移脚本时必须同步 `schema.sql` |
-| 浏览器走查与截图 | **已完成**：2026-09-04 在最新版 Chrome（1440×900）完整走查管理员、教师、学生三条动线，留存 27 张截图于 `docs/images/screenshots/` | 见第 6 节 |
+| 浏览器走查与截图 | **已完成**：2026-09-04 在 Google Chrome 152 上完整走查管理员、教师、学生三条动线，留存 27 张截图于 `docs/images/screenshots/` | 见第 6 节 |
 | AI 真实密钥联调 | **已完成**：OpenAI 兼容协议 + `deepseek-v4-flash`，生成 2 道草稿、0 道丢弃，1 道确认入库；余额为 0 时的上游 400 被映射为 `AI_REQUEST_FAILED` 并降级 | 见第 6 节 |
 | 性能指标 | 未测 | `plan.md` 第 3 节的「1000 题、20 并发、95% 响应 < 1 秒」尚无测量数据，不应在报告中声称达标 |
 | 干净环境 10 分钟启动 | 未按 README 从零复现 | 影响「新环境可重复启动」这一完成标准 |
@@ -104,7 +104,7 @@ python3 scripts/comment-ratio.py     # 注释比例核对
 
 自动化测试跑在 H2 上，因此另外在真实环境完整走查一遍，用来验证「H2 上成立的结论在 MySQL 上同样成立」。
 
-环境：macOS、Chrome 最新版（视口 1440×900）、后端 Spring Boot 3.5.16 + 本机 MySQL 9.6（Flyway v4）、前端 Vite 开发服务器。
+环境：macOS、Google Chrome 152（Playwright 驱动，视口宽 1440—1470 px）、后端 Spring Boot 3.5.16 + 本机 MySQL 9.6（Flyway v4）、前端 Vite 开发服务器。
 
 ### 6.1 验收数字复现
 

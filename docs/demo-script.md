@@ -2,7 +2,7 @@
 
 验收现场照这份脚本从上到下点一遍，就是一次完整的「建题 → 组卷 → 发布 → 答题 → 交卷 → 阅卷 → 公布 → 查分」演示。每步都写了预期结果和对应的业务规则，被追问时可以直接答。
 
-> 本脚本已于 **2026-09-04 在最新版 Chrome（1440×900）上完整走查一遍**，27 张截图存于 [`docs/images/screenshots/`](images/screenshots/)，逐项结果见 [`test-records.md` 第 6 节](test-records.md#6-真实环境走查记录2026-09-04)。脚本中的数字与自动化测试断言一致，也已在真实 MySQL 上复现。
+> 本脚本已于 **2026-09-04 在 Google Chrome 152 上完整走查一遍**，27 张截图存于 [`docs/images/screenshots/`](images/screenshots/)，逐项结果见 [`test-records.md` 第 6 节](test-records.md#6-真实环境走查记录2026-09-04)。脚本中的数字与自动化测试断言一致，也已在真实 MySQL 上复现。
 
 ## 0. 演示前准备
 

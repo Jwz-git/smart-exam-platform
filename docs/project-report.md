@@ -262,7 +262,7 @@ erDiagram
 
 ## 4. 系统演示（截图及说明）
 
-以下 27 张截图全部来自 **2026-09-04 在最新版 Chrome（1440 × 900）上的完整走查**，后端为本机 MySQL 9.6、前端为 Vite 开发服务器。截图顺序即演示顺序，与 [`docs/demo-script.md`](demo-script.md) 一一对应。
+以下 27 张截图全部来自 **2026-09-04 的完整走查**：浏览器为 Google Chrome 152（由 Playwright 驱动，视口宽 1440—1470 px，较长的页面用整页截图），后端为本机 MySQL 9.6，前端为 Vite 开发服务器。截图顺序即演示顺序，与 [`docs/demo-script.md`](demo-script.md) 一一对应。
 
 ### 4.1 登录与令牌失效
 
