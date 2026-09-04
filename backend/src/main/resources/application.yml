@@ -12,6 +12,21 @@ app:
   security:
     jwt-secret: ${JWT_SECRET}
     access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:60}
+  # 考试与评分。auto-submit-interval-ms 是 @Scheduled 的触发间隔，启动时固化，只能改环境变量；
+  # pass-ratio-percent 可以在系统设置页改（默认值仍是这里的值，覆盖值存在 system_setting 表）。
+  exam:
+    auto-submit-interval-ms: ${EXAM_AUTO_SUBMIT_INTERVAL_MS:30000}
+    pass-ratio-percent: ${EXAM_PASS_RATIO_PERCENT:60}
+  # 题库批量导入的两个可调项，同样可被系统设置页覆盖。
+  question:
+    import-max-rows: ${QUESTION_IMPORT_MAX_ROWS:200}
+    import-skip-duplicate-stem: ${QUESTION_IMPORT_SKIP_DUPLICATE_STEM:true}
+  # 规则自动组卷单次抽题上限。
+  paper:
+    auto-compose-max-questions: ${PAPER_AUTO_COMPOSE_MAX_QUESTIONS:50}
+  # 错题重练默认每组题数。
+  practice:
+    batch-size: ${PRACTICE_BATCH_SIZE:10}
   # AI 辅助出题。密钥默认为空，表示未启用；此时只有出题接口不可用，其余功能照常。
   # protocol=openai 时 base-url 要带到版本段（如 .../v1），anthropic 时只到域名，详见 docs/api.md 第 8 节。
   ai:

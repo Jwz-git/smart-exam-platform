@@ -92,6 +92,34 @@ public class ExamRepository {
                         rs.getString("type_snapshot"), rs.getString("stem_snapshot"), readJson(rs.getString("options_snapshot")))).list();
     }
 
+    /**
+     * 取试卷导出所需的逐题数据。
+     *
+     * <p>与 {@link #findPaperQuestions} 的关键差别是<b>带标准答案和解析</b>：导出是教师本人的操作，
+     * 由 {@code PaperController} 的角色规则与 {@code ExamService#paper} 的归属校验双重把关，
+     * 不会下发给学生。两个方法因此刻意分开写，避免哪天有人给答题接口误用了带答案的那一个。
+     *
+     * <p>难度、知识点、标签三列不在快照里，只能回查 {@code question} 表，因此它们反映的是
+     * <b>题库当前</b>的值，而题干、选项、答案、分值仍来自试卷快照。用 LEFT JOIN 兜底：
+     * 被引用的题目按业务规则不会被物理删除（只会停用），但导出不该因为一条脏数据整个失败。
+     */
+    public List<PaperExportRow> findPaperExportRows(long paperId) {
+        return jdbc.sql("""
+                SELECT pq.display_order,pq.score,pq.type_snapshot,pq.stem_snapshot,pq.options_snapshot,
+                  pq.answer_snapshot,pq.explanation_snapshot,q.difficulty,q.tags,k.name knowledge_point_name
+                FROM paper_question pq
+                LEFT JOIN question q ON q.id=pq.question_id
+                LEFT JOIN knowledge_point k ON k.id=q.knowledge_point_id
+                WHERE pq.paper_id=:paper ORDER BY pq.display_order
+                """).param("paper", paperId)
+                .query((rs, row) -> new PaperExportRow(rs.getInt("display_order"), rs.getBigDecimal("score"),
+                        rs.getString("type_snapshot"), rs.getString("stem_snapshot"),
+                        readJson(rs.getString("options_snapshot")), readJson(rs.getString("answer_snapshot")),
+                        rs.getString("explanation_snapshot"), rs.getString("difficulty"),
+                        rs.getString("knowledge_point_name"), rs.getString("tags")))
+                .list();
+    }
+
     /** 把试卷置为已发布。状态前置条件由 Service 校验。 */
     public void publishPaper(long id) {
         jdbc.sql("UPDATE paper SET status='PUBLISHED' WHERE id=:id").param("id", id).update();
@@ -306,4 +334,19 @@ public class ExamRepository {
      * @param actual   学生作答，未作答时为 null
      */
     public record AnswerRow(long paperQuestionId, String type, JsonNode expected, BigDecimal score, JsonNode actual) {}
+
+    /**
+     * 试卷导出用的一行。
+     *
+     * @param type            题型快照
+     * @param stem            题干快照
+     * @param options         选项快照，非选择题为 JSON 空数组或 null
+     * @param answer          标准答案快照
+     * @param explanation     解析快照
+     * @param difficulty      题库当前难度（快照里没有这一列），题目已不可查时为 null
+     * @param knowledgePoint  题库当前知识点名称，同上
+     * @param tags            题库当前标签，同上
+     */
+    public record PaperExportRow(int displayOrder, BigDecimal score, String type, String stem, JsonNode options,
+            JsonNode answer, String explanation, String difficulty, String knowledgePoint, String tags) {}
 }

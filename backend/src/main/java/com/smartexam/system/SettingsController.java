@@ -2,34 +2,48 @@ package com.smartexam.system;
 
 import com.smartexam.ai.AiProperties;
 import com.smartexam.common.ApiResponse;
-import com.smartexam.exam.GradingService;
+import com.smartexam.common.SettingsCatalog;
+import com.smartexam.common.SettingsStore;
 import com.smartexam.system.SettingsModels.AiInfo;
 import com.smartexam.system.SettingsModels.DatabaseInfo;
 import com.smartexam.system.SettingsModels.ExamRuleInfo;
 import com.smartexam.system.SettingsModels.RuntimeInfo;
 import com.smartexam.system.SettingsModels.SecurityInfo;
+import com.smartexam.system.SettingsModels.SettingItemView;
+import com.smartexam.system.SettingsModels.SettingsUpdateResult;
 import com.smartexam.system.SettingsModels.SettingsView;
-import java.math.BigDecimal;
+import com.smartexam.system.SettingsModels.UpdateSettingsRequest;
+import jakarta.validation.Valid;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootVersion;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 系统设置接口：返回当前进程真正生效的运行参数，供教师和管理员核对环境。
+ * 系统设置接口：读当前生效的运行参数，并允许管理员修改其中白名单内的若干项。
  *
  * <p>与 {@code /api/health} 的区别是「谁能看」：健康检查匿名可访问，因此只回状态和时间；
  * 本接口需要登录且限定教师或管理员，才敢返回版本号、数据库产品和 AI 服务商这类环境信息。
  *
- * <p>响应里不含任何密钥、密码或连接串，具体约定见 {@link SettingsModels}。
+ * <p>读写权限刻意不同，也是本项目三层权限的一个典型例子：
+ * URL 规则（{@code SecurityConfig}）放行到「教师或管理员」，方法级注解再把写操作收紧到管理员。
+ * 教师能看到当前生效的参数（演示和排查都需要），但改不了。
+ *
+ * <p>响应里不含任何密钥、密码或连接串，可编辑白名单也不含它们，具体约定见 {@link SettingsModels}
+ * 与 {@link SettingsCatalog}。
  */
 @RestController
 @RequestMapping("/api/v1/system")
@@ -37,31 +51,58 @@ public class SettingsController {
     private final JdbcClient jdbc;
     private final DataSource dataSource;
     private final AiProperties ai;
-    private final long accessTokenMinutes;
+    private final SettingsStore settings;
     private final long autoSubmitIntervalMs;
 
-    public SettingsController(JdbcClient jdbc, DataSource dataSource, AiProperties ai,
-            @Value("${app.security.access-token-minutes:60}") long accessTokenMinutes,
+    public SettingsController(JdbcClient jdbc, DataSource dataSource, AiProperties ai, SettingsStore settings,
             @Value("${app.exam.auto-submit-interval-ms:30000}") long autoSubmitIntervalMs) {
         this.jdbc = jdbc;
         this.dataSource = dataSource;
         this.ai = ai;
-        this.accessTokenMinutes = accessTokenMinutes;
+        this.settings = settings;
         this.autoSubmitIntervalMs = autoSubmitIntervalMs;
     }
 
-    /** 汇总五组信息：运行环境、安全参数、考试规则、AI 配置状态、数据库。 */
+    /** 汇总可编辑项与五组只读信息：运行环境、安全参数、考试规则、AI 配置状态、数据库。 */
     @GetMapping("/settings") @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     public ApiResponse<SettingsView> settings() {
+        return ApiResponse.of(view());
+    }
+
+    /**
+     * 修改设置。仅管理员，且只接受 {@link SettingsCatalog} 白名单里的键。
+     *
+     * <p>整批校验后再写库（见 {@code SettingsStore#apply}），因此一次提交要么全部生效、
+     * 要么一项都不变，不会留下改了一半的状态。返回修改后的完整视图，前端不必再取一次。
+     */
+    @PutMapping("/settings") @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<SettingsUpdateResult> update(@Valid @RequestBody UpdateSettingsRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        int changed = settings.apply(request.values(), ((Number) jwt.getClaim("userId")).longValue());
+        return ApiResponse.of(new SettingsUpdateResult(changed, view()));
+    }
+
+    /** 组装整页视图。读与写两个接口都用它，保证「改完之后看到的」和「重新打开看到的」完全一致。 */
+    private SettingsView view() {
         RuntimeInfo runtime = new RuntimeInfo("smart-exam-backend", SpringBootVersion.getVersion(),
                 System.getProperty("java.version"), ZoneId.systemDefault().getId(), Instant.now());
-        SecurityInfo security = new SecurityInfo("JWT / HS256", accessTokenMinutes, "BCrypt", false);
+        SecurityInfo security = new SecurityInfo("JWT / HS256",
+                settings.asInt(SettingsCatalog.ACCESS_TOKEN_MINUTES), "BCrypt", false);
         ExamRuleInfo exam = new ExamRuleInfo(autoSubmitIntervalMs,
-                GradingService.PASS_RATIO.multiply(new BigDecimal("100")).stripTrailingZeros(),
+                settings.asDecimal(SettingsCatalog.PASS_RATIO_PERCENT).stripTrailingZeros(),
                 "竞赛排名，同分并列且占用名次（1、2、2、4）", "多选题答案集合完全一致才得分，不给部分分");
         AiInfo aiInfo = new AiInfo(ai.configured(), ai.protocol(), ai.normalizedBaseUrl(), ai.model(),
                 ai.timeoutSeconds(), ai.maxTokens());
-        return ApiResponse.of(new SettingsView(runtime, security, exam, aiInfo, database()));
+        return new SettingsView(editable(), runtime, security, exam, aiInfo, database());
+    }
+
+    /** 把设置项摊平成前端直接可渲染的形状，顺序与 {@link SettingsCatalog#DEFINITIONS} 一致。 */
+    private List<SettingItemView> editable() {
+        return settings.items().stream().map(item -> new SettingItemView(item.definition().key(),
+                item.definition().label(), item.definition().group(), item.definition().type().name(),
+                item.value(), item.defaultValue(), item.overridden(), item.definition().min(),
+                item.definition().max(), item.definition().unit(), item.definition().description(),
+                item.updatedAt(), item.updatedBy())).toList();
     }
 
     /**

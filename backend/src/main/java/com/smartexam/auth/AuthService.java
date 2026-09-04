@@ -1,11 +1,12 @@
 package com.smartexam.auth;
 
+import com.smartexam.common.SettingsCatalog;
+import com.smartexam.common.SettingsStore;
 import com.smartexam.user.AppUser;
 import com.smartexam.user.UserRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,14 +30,14 @@ public class AuthService {
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
-    private final long accessTokenMinutes;
+    private final SettingsStore settings;
 
     public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder,
-            @Value("${app.security.access-token-minutes}") long accessTokenMinutes) {
+            SettingsStore settings) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
-        this.accessTokenMinutes = accessTokenMinutes;
+        this.settings = settings;
     }
 
     /**
@@ -56,7 +57,9 @@ public class AuthService {
             throw new BadCredentialsException("账号或密码错误");
         }
         Instant issuedAt = Instant.now();
-        Instant expiresAt = issuedAt.plus(accessTokenMinutes, ChronoUnit.MINUTES);
+        // 有效期每次签发时都重新读一遍系统设置：管理员改完立刻对新令牌生效，
+        // 已经发出去的令牌仍按签发时写入的 exp 过期——无状态 JWT 不可能追回，这一点在设置页里写明。
+        Instant expiresAt = issuedAt.plus(settings.asInt(SettingsCatalog.ACCESS_TOKEN_MINUTES), ChronoUnit.MINUTES);
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("smart-exam-backend")
                 .issuedAt(issuedAt)

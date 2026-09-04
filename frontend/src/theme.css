@@ -73,6 +73,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn:disabled { cursor: not-allowed; opacity: 0.5; }
 .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+/* 主按钮禁用时不能只靠 .btn:disabled 的半透明：50% 透明度的蓝底看上去仍然是一个可点的蓝按钮，
+   而旁边同样禁用的次要按钮已经灰得很明显，两者对比反而让人以为主按钮是能点的。
+   典型场景是导入弹窗的「确认导入」——没预览过就不允许写库，这个禁用状态必须一眼看得出来。 */
+.btn-primary:disabled { background: var(--head); border-color: var(--line); color: var(--muted); opacity: 1; }
 .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn-danger:hover:not(:disabled) { background: #b91c1c; border-color: #b91c1c; color: #fff; }
 /* 大号按钮目前只用于学生端的「交卷」，需要足够显眼且不易误点 */
@@ -266,6 +270,9 @@ textarea { height: auto; min-height: 76px; padding: 8px 10px; resize: vertical; 
 .filter-bar label { display: flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
 /* 筛选栏里的控件按内容自适应宽度，不吃满整行；min-width 保证下拉框不会窄到看不清选项 */
 .filter-bar select, .filter-bar input { width: auto; min-width: 120px; }
+/* 勾选框例外：上面那条 min-width 会把它撑成一个 120px 宽的方块，
+   文字标签被推到很远的右边，看上去和这个勾选框没有关系（走查发现）。 */
+.filter-bar input[type='checkbox'], .filter-bar input[type='radio'] { min-width: 0; }
 .alert { padding: 9px 12px; border-radius: var(--radius); }
 /* 成功与失败提示。用底色 + 同色系边框，比纯文字更容易在长页面里被注意到 */
 .alert.error { background: #fef2f2; border: 1px solid #fecaca; color: #b42318; }

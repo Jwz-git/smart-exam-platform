@@ -91,6 +91,8 @@ function analysis(questions: QuestionStat[]): ExamAnalysis {
 /** 造系统设置响应，默认「AI 未配置、H2 无迁移历史」这一组最容易渲染错的取值。 */
 function settings(overrides: Partial<SystemSettings> = {}): SystemSettings {
   return {
+    // 可编辑项在专门的 settings.spec.ts 里验证，这里给空数组只为满足类型。
+    editable: [],
     runtime: {
       service: 'smart-exam-backend', springBootVersion: '3.5.16', javaVersion: '21.0.2',
       serverTimeZone: 'Asia/Shanghai', serverTime: '2026-09-04T01:00:00Z',

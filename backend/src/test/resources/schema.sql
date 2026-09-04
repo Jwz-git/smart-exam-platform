@@ -2,6 +2,8 @@
 -- 都会重跑一次本脚本。因此脚本必须可重复执行：先按外键反序删掉全部表，再重建。
 -- 少了这一步，第二个上下文（例如用 @MockitoBean 替换 Bean 的测试类）会在
 -- 「表已存在」处中断初始化，data.sql 不再执行，之后所有测试都会因为查不到账号而 401。
+DROP TABLE IF EXISTS practice_attempt;
+DROP TABLE IF EXISTS system_setting;
 DROP TABLE IF EXISTS submission_answer;
 DROP TABLE IF EXISTS submission;
 DROP TABLE IF EXISTS exam;
@@ -112,4 +114,20 @@ CREATE TABLE submission_answer (
     graded_by BIGINT,
     graded_at TIMESTAMP WITH TIME ZONE,
     UNIQUE(submission_id, paper_question_id)
+);
+
+CREATE TABLE system_setting (
+    setting_key VARCHAR(64) PRIMARY KEY,
+    setting_value VARCHAR(255) NOT NULL,
+    updated_by BIGINT,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE TABLE practice_attempt (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    paper_question_id BIGINT NOT NULL,
+    answer_content CLOB,
+    correct BOOLEAN NOT NULL,
+    attempted_at TIMESTAMP WITH TIME ZONE NOT NULL
 );

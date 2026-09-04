@@ -1,6 +1,5 @@
 package com.smartexam.exam;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.smartexam.common.DomainException;
 import com.smartexam.exam.ExamModels.*;
 import com.smartexam.exam.ExamRepository.AnswerRow;
@@ -10,7 +9,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -31,14 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ExamService {
-    /** 主观题题型，定义见 {@link GradingModels#SUBJECTIVE_TYPES}；判分与阅卷共用同一份，避免两处口径不一致。 */
-    private static final Set<String> SUBJECTIVE_TYPES = GradingModels.SUBJECTIVE_TYPES;
-
     private final ExamRepository repository;
     private final QuestionRepository questions;
+    /** 客观题判分规则，与错题重练共用同一份实现，见 {@link ObjectiveGrader}。 */
+    private final ObjectiveGrader grader;
 
-    public ExamService(ExamRepository repository, QuestionRepository questions) {
-        this.repository = repository; this.questions = questions;
+    public ExamService(ExamRepository repository, QuestionRepository questions, ObjectiveGrader grader) {
+        this.repository = repository; this.questions = questions; this.grader = grader;
     }
 
     /** 查询指定教师创建的全部试卷。 */
@@ -227,36 +224,17 @@ public class ExamService {
     private SubmitResult scoreAndSubmit(long id) {
         BigDecimal objective = BigDecimal.ZERO;
         for (AnswerRow row : repository.answersForScoring(id)) {
-            BigDecimal score = isObjective(row.type()) && equalAnswer(row.expected(), row.actual()) ? row.score() : BigDecimal.ZERO;
+            boolean objectiveQuestion = grader.isObjective(row.type());
+            BigDecimal score = objectiveQuestion && grader.matches(row.expected(), row.actual())
+                    ? row.score() : BigDecimal.ZERO;
             repository.scoreAnswer(id, row.paperQuestionId(), score);
-            if (isObjective(row.type())) objective = objective.add(score);
+            if (objectiveQuestion) objective = objective.add(score);
         }
         Instant submittedAt = Instant.now();
         repository.submit(id, objective, submittedAt);
         return new SubmitResult(id, "SUBMITTED", submittedAt, objective);
     }
 
-    /**
-     * 比对标准答案与学生作答。
-     *
-     * <p>选择题按集合比较，忽略选项顺序和大小写差异；多选必须完全一致，少选或多选均不得分。
-     * 判断题直接比较布尔值。未作答（null 或 JSON null）一律不得分。
-     */
-    private boolean equalAnswer(JsonNode expected, JsonNode actual) {
-        if (actual == null || actual.isNull()) return false;
-        if (expected.isArray()) return stringSet(expected).equals(stringSet(actual));
-        return expected.equals(actual);
-    }
-
-    /** 把选项键数组转成规范化集合：去空格、转大写，使 {@code ["a","B"]} 与 {@code ["A","b"]} 等价。 */
-    private Set<String> stringSet(JsonNode node) {
-        Set<String> values = new HashSet<>();
-        if (!node.isArray()) return values;
-        node.forEach(value -> values.add(value.asText().trim().toUpperCase(Locale.ROOT)));
-        return values;
-    }
-
-    private boolean isObjective(String type) { return !SUBJECTIVE_TYPES.contains(type); }
     /** 校验考试处于可作答状态：已发布、已开始、未截止。三种失败给出不同的错误码便于前端提示。 */
     private void ensureOpen(ExamView exam) {
         Instant now = Instant.now();

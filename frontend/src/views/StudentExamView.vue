@@ -17,6 +17,7 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import SubmissionGradeModal from './SubmissionGradeModal.vue'
+import WrongQuestionBook from './WrongQuestionBook.vue'
 import {
   api, isChoice, typeLabels,
   type Exam, type MyResult, type PaperQuestion, type Submission, type SubmissionDetail,
@@ -30,8 +31,13 @@ import { token, user } from '../session'
  */
 type AnswerValue = string[] | boolean | string | null
 
-/** 学生端两个页签：考试列表与我的成绩。学生没有侧栏，用页签切换成本最低。 */
-const tab = ref<'exams' | 'results'>('exams')
+/**
+ * 学生端三个页签：考试列表、我的成绩、错题本。学生没有侧栏，用页签切换成本最低。
+ *
+ * 错题本单独抽成组件而不是写在这里：它自带「清单 / 重练 / 结果」三种模式，
+ * 塞进这个已经很长的文件只会让答题主流程更难读。
+ */
+const tab = ref<'exams' | 'results' | 'wrong'>('exams')
 /** 可参加的考试列表。 */
 const exams = ref<Exam[]>([])
 /** 本人已公布的成绩列表。未公布的考试不会出现在这里。 */
@@ -353,11 +359,12 @@ onUnmounted(() => window.clearInterval(autoSave))
       <section class="content">
         <!-- 交卷结果提示放在这里而不是弹窗：学生交完卷会回到列表，正好能看到得分说明 -->
         <div class="page-head">
-          <h2>{{ tab === 'exams' ? '可参加的考试' : '我的成绩' }}</h2>
+          <h2>{{ tab === 'exams' ? '可参加的考试' : tab === 'results' ? '我的成绩' : '我的错题本' }}</h2>
           <span class="spacer" />
           <!-- 两个页签用按钮实现，选中态复用主按钮样式，避免为学生端再引入一套导航组件 -->
           <button class="btn" :class="{ 'btn-primary': tab === 'exams' }" type="button" @click="tab = 'exams'">考试列表</button>
           <button class="btn" :class="{ 'btn-primary': tab === 'results' }" type="button" @click="tab = 'results'">我的成绩</button>
+          <button class="btn" :class="{ 'btn-primary': tab === 'wrong' }" type="button" @click="tab = 'wrong'">错题本</button>
         </div>
         <p v-if="error" class="alert error" role="alert">{{ error }}</p>
         <p v-if="result" class="alert ok" role="status">{{ result }}</p>
@@ -395,7 +402,7 @@ onUnmounted(() => window.clearInterval(autoSave))
         </div>
 
         <!-- 我的成绩。只有教师公布成绩后才会出现在这里，公布前列表为空 -->
-        <div v-else class="card">
+        <div v-else-if="tab === 'results'" class="card">
           <div class="panel-title">
             <h3>已公布成绩</h3>
             <span class="spacer">只显示本人成绩与名次</span>
@@ -431,6 +438,9 @@ onUnmounted(() => window.clearInterval(autoSave))
             </tbody>
           </table>
         </div>
+
+        <!-- 错题本与错题重练。只收录已公布成绩的考试，重练不改动任何成绩 -->
+        <WrongQuestionBook v-else />
       </section>
     </div>
 

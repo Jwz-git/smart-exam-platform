@@ -2,10 +2,10 @@ package com.smartexam.ai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.smartexam.ai.AiModels.DraftRequest;
 import com.smartexam.ai.AiModels.DraftResponse;
 import com.smartexam.common.DomainException;
+import com.smartexam.question.AnswerNormalizer;
 import com.smartexam.question.QuestionModels.OptionRequest;
 import com.smartexam.question.QuestionModels.QuestionRequest;
 import com.smartexam.question.QuestionModels.Type;
@@ -52,10 +52,13 @@ public class AiService {
     private final AiClient client;
     private final AiProperties properties;
     private final QuestionService questions;
+    private final AnswerNormalizer answers;
     private final ObjectMapper json;
 
-    public AiService(AiClient client, AiProperties properties, QuestionService questions, ObjectMapper json) {
-        this.client = client; this.properties = properties; this.questions = questions; this.json = json;
+    public AiService(AiClient client, AiProperties properties, QuestionService questions,
+            AnswerNormalizer answers, ObjectMapper json) {
+        this.client = client; this.properties = properties; this.questions = questions;
+        this.answers = answers; this.json = json;
     }
 
     /**
@@ -175,35 +178,15 @@ public class AiService {
     /**
      * 把模型给的答案掰成题型要求的形态。
      *
-     * <p>只做形态归一化，不做正确性判断——「A」变成 {@code ["A"]}、字符串 "true" 变成布尔 true
-     * 这类修正是安全的，而「答案是否引用了存在的选项」「单选是否只有一个答案」仍然交给
-     * {@link QuestionService#validateDraft(QuestionRequest)} 判定。归一化失败的留给校验去拒绝，不在这里抛错。
+     * <p>实现委托给 {@link AnswerNormalizer}——同一段归一化也被题库批量导入用到。
+     * 两个入口面对的是同一类问题（拿到的是人或模型随手写的形态），各写一份迟早会出现
+     * 「AI 能识别的写法导入不认」这种莫名其妙的差异。
+     *
+     * <p>这里用的是宽松策略：判断题遇到无法识别的词按 {@code false} 处理。教师会逐题看草稿，
+     * 让他自己发现比整批作废更合适；批量导入则用严格版本，不认识就报错。
      */
     private JsonNode normalizeAnswer(Type type, JsonNode answer) {
-        return switch (type) {
-            case SINGLE_CHOICE, MULTIPLE_CHOICE -> {
-                ArrayNode keys = json.createArrayNode();
-                if (answer.isArray()) answer.forEach(node -> keys.add(node.asText("").trim().toUpperCase(Locale.ROOT)));
-                else if (answer.isTextual()) {
-                    // "A,B" 和 "AB" 两种写法都出现过，统一按分隔符和单字母拆开。
-                    String raw = answer.asText().trim().toUpperCase(Locale.ROOT);
-                    for (String part : raw.split("[,，、\\s]+")) {
-                        if (part.isBlank()) continue;
-                        if (part.length() == 1) keys.add(part);
-                        else part.chars().forEach(character -> keys.add(String.valueOf((char) character)));
-                    }
-                }
-                yield keys;
-            }
-            case TRUE_FALSE -> {
-                if (answer.isBoolean()) yield answer;
-                String raw = answer.asText("").trim().toLowerCase(Locale.ROOT);
-                yield json.getNodeFactory().booleanNode("true".equals(raw) || "正确".equals(raw) || "对".equals(raw));
-            }
-            // 简答题与编程题：非文本节点按原样序列化成文本，保证一定是字符串。
-            case SHORT_ANSWER, PROGRAMMING -> json.getNodeFactory()
-                    .textNode(answer.isTextual() ? answer.asText().trim() : answer.toString());
-        };
+        return answers.normalize(type, answer);
     }
 
     /** 读取可选文本字段并按数据库列长度截断，避免模型写太长导致保存时才失败。 */

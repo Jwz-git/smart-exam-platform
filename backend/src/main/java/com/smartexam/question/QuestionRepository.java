@@ -136,6 +136,46 @@ public class QuestionRepository {
                 .query(Long.class).single() > 0;
     }
 
+    /**
+     * 判断该教师题库里是否已有完全相同题干的题目，供批量导入判重。
+     *
+     * <p>范围限定在 {@code created_by}，与题库列表的可见范围一致：另一位教师有同名题目
+     * 不该阻止本人导入，而且那道题在这里既看不到也改不了，报「已存在」只会让人莫名其妙。
+     *
+     * <p>刻意不在数据库上加唯一约束：同一题干配不同选项是合法的出题手法，
+     * 判重是导入这一个入口的便利功能，不是题库的完整性规则。
+     */
+    public boolean existsByStem(long creatorId, String stem) {
+        return jdbc.sql("SELECT COUNT(*) FROM question WHERE created_by=:creator AND stem=:stem")
+                .param("creator", creatorId).param("stem", stem).query(Long.class).single() > 0;
+    }
+
+    /**
+     * 按规则取候选题目 ID，供规则自动组卷抽题。
+     *
+     * <p>只返回 ID 而不是完整题目：抽中的是少数，先取一串 ID 在内存里洗牌、切片，
+     * 再对抽中的那几道逐一取详情，比把整个候选池连选项一起查出来便宜得多。
+     *
+     * <p>固定只取 {@code ACTIVE}：停用题目本来就不允许加入新试卷，不该出现在候选池里，
+     * 否则抽中之后才被组卷校验拒掉。范围同样限定 {@code created_by}，与题库列表一致。
+     *
+     * <p>刻意不用 {@code ORDER BY RAND()}：随机在 Java 里做。一是 {@code RAND()} 的行为
+     * 与数据库方言绑定（自动化测试跑 H2、生产跑 MySQL），二是「按 ID 取回再洗牌」可以
+     * 顺便把「候选池有多少道」这个数字告诉教师，而 SQL 层随机取 N 条就拿不到池子大小了。
+     */
+    public List<Long> findComposeCandidateIds(long creatorId, Type type, Difficulty difficulty,
+            Long knowledgePointId) {
+        StringBuilder sql = new StringBuilder(
+                "SELECT id FROM question WHERE created_by=:creator AND status='ACTIVE'");
+        Map<String, Object> params = new HashMap<>();
+        params.put("creator", creatorId);
+        if (type != null) { sql.append(" AND type=:type"); params.put("type", type.name()); }
+        if (difficulty != null) { sql.append(" AND difficulty=:difficulty"); params.put("difficulty", difficulty.name()); }
+        if (knowledgePointId != null) { sql.append(" AND knowledge_point_id=:point"); params.put("point", knowledgePointId); }
+        sql.append(" ORDER BY id");
+        return statement(sql.toString(), params).query(Long.class).list();
+    }
+
     /** 按顺序写入选项，{@code display_order} 从 1 开始，选项键统一转大写以便和答案比对。 */
     private void replaceOptions(long questionId, List<OptionRequest> options) {
         if (options == null) return;

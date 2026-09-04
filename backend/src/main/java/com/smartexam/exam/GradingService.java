@@ -1,6 +1,8 @@
 package com.smartexam.exam;
 
 import com.smartexam.common.DomainException;
+import com.smartexam.common.SettingsCatalog;
+import com.smartexam.common.SettingsStore;
 import com.smartexam.exam.GradingModels.AnswerDetailView;
 import com.smartexam.exam.GradingModels.ExamResultsView;
 import com.smartexam.exam.GradingModels.GradingBoardView;
@@ -32,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>每次评分后立即重算 {@code subjective_score} 与 {@code total_score}；一份卷子的主观题全部评完即为已评分；</li>
  *   <li>公布成绩要求「无人仍在作答」且「全场主观题已批完」，公布后评分冻结、考试关闭；</li>
  *   <li>排名采用竞赛排名（{@code 1、2、2、4}），只统计已评完的有效答卷。</li>
+ *   <li>及格线占试卷总分的比例来自系统设置（默认 60%），改动后立刻生效，历史分数不变。</li>
  * </ol>
  *
  * <p>字段可见性是本类第二个职责，规则见 {@link GradingModels}：教师看全部，学生公布前只能看到自己的作答，
@@ -40,18 +43,21 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class GradingService {
-    /** 及格线：总分达到试卷总分的 60%。课程没有规定及格线，这里取通用做法并在文档里写明。 */
-    /**
-     * 及格线占试卷总分的比例。课程未规定及格线，这里取通用的 60%。
-     *
-     * <p>公开给统计分析模块复用（{@code StatsService} 要展示及格分数线），
-     * 避免两处各写一个 0.6 而后被改成不同的值。
-     */
-    public static final BigDecimal PASS_RATIO = new BigDecimal("0.6");
-
     private final GradingRepository repository;
+    private final SettingsStore settings;
 
-    public GradingService(GradingRepository repository) { this.repository = repository; }
+    public GradingService(GradingRepository repository, SettingsStore settings) {
+        this.repository = repository; this.settings = settings;
+    }
+
+    /**
+     * 及格线占试卷总分的比例，默认 60%（课程未规定及格线，取通用做法）。
+     *
+     * <p>原先是本类的一个 {@code public static final} 常量，现在改为运行时读取系统设置：
+     * 管理员在系统设置页改及格线后，成绩页与统计分析页立刻按新线重算，不需要重启。
+     * 统计分析模块调用同一个方法，因此两个页面不可能出现两条不同的及格线。
+     */
+    public BigDecimal passRatio() { return settings.passRatio(); }
 
     /**
      * 教师阅卷面板：本场考试的全部答卷、每份的主观题总数与未评分数量。
@@ -154,7 +160,7 @@ public class GradingService {
         requireOwner(exam.createdBy(), teacherId, "不能查看其他教师考试的成绩");
         List<RankingItemView> rankings = rank(repository.findRankingRows(examId));
         List<BigDecimal> scores = rankings.stream().map(RankingItemView::totalScore).toList();
-        BigDecimal pass = exam.paperTotalScore().multiply(PASS_RATIO);
+        BigDecimal pass = exam.paperTotalScore().multiply(passRatio());
         return new ExamResultsView(exam.id(), exam.name(), exam.paperTotalScore(), exam.status(),
                 isPublished(exam.status()), exam.resultsPublishedAt(), rankings.size(), average(scores),
                 scores.isEmpty() ? null : scores.get(0), scores.isEmpty() ? null : scores.get(scores.size() - 1),

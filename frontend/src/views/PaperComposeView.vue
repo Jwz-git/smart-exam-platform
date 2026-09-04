@@ -11,8 +11,13 @@
  *
  * 2. 候选列表只取启用题目（status: 'ACTIVE'）。停用题目本来就不允许加入新试卷，
  *    与其让用户选完再被后端拒绝，不如一开始就不展示。
+ *
+ * 3. 自动组卷只把抽中的题目填进右侧的「试卷内容」，保存仍走同一个「保存草稿」按钮。
+ *    自动组卷因此不是第二条写入路径，分值校验、题目归属和启用状态的校验只有一处实现。
  */
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import AutoComposeModal from './AutoComposeModal.vue'
+import PaperExportModal from './PaperExportModal.vue'
 import {
   api, difficultyLabels, typeLabels,
   type KnowledgePoint, type Paper, type Question,
@@ -40,6 +45,10 @@ const error = ref('')
 const notice = ref('')
 const busy = ref(false)
 const previewOpen = ref(false)
+/** 自动组卷弹窗是否打开。 */
+const autoOpen = ref(false)
+/** 正在导出的试卷；为 null 表示导出弹窗关闭。 */
+const exporting = ref<Paper | null>(null)
 
 /** 总分始终等于各题分值之和，不允许单独填写一个不一致的总分。 */
 const totalScore = computed(() => picked.value.reduce((sum, item) => sum + (Number(item.score) || 0), 0))
@@ -130,6 +139,24 @@ function move(index: number, offset: number) {
 }
 
 /**
+ * 把自动组卷的方案填进试卷内容。
+ *
+ * 已在试卷里的题目跳过而不是重复加入：试卷题目在数据库上有唯一约束，重复的话保存必然失败。
+ * 跳过了几道要如实说出来，否则教师会以为「应用 10 道」结果只多了 8 道是个 bug。
+ */
+function applyPlan(items: { question: Question; score: number }[]) {
+  const existing = pickedIds.value
+  const adding = items.filter((item) => !existing.has(item.question.id))
+  picked.value = [...picked.value, ...adding.map((item) => ({ question: item.question, score: item.score }))]
+  const skipped = items.length - adding.length
+  notice.value = `自动组卷已加入 ${adding.length} 道题`
+    + (skipped ? `，跳过 ${skipped} 道已在试卷中的题目` : '')
+    + `，确认后请点「保存草稿」。`
+  error.value = ''
+  autoOpen.value = false
+}
+
+/**
  * 保存试卷草稿。
  *
  * 保存成功后清空当前编辑内容：一次组卷是一个完整动作，留着上一份的题目容易误操作。
@@ -180,6 +207,7 @@ async function publish(paper: Paper) {
     <div class="page-head">
       <h2>手动组卷</h2>
       <span class="spacer" />
+      <button class="btn" type="button" @click="autoOpen = true">自动组卷</button>
       <button class="btn" type="button" :disabled="busy" @click="saveDraft">保存草稿</button>
       <button class="btn btn-primary" type="button" :disabled="!picked.length" @click="previewOpen = true">预览</button>
     </div>
@@ -331,7 +359,7 @@ async function publish(paper: Paper) {
             <th style="width: 70px" class="num">总分</th>
             <th style="width: 90px" class="num">时长</th>
             <th style="width: 76px">状态</th>
-            <th style="width: 90px">操作</th>
+            <th style="width: 130px">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -346,7 +374,8 @@ async function publish(paper: Paper) {
             </td>
             <td class="ops">
               <button v-if="paper.status === 'DRAFT'" class="btn-link" type="button" @click="publish(paper)">发布</button>
-              <span v-else class="muted">—</span>
+              <span v-if="paper.status === 'DRAFT'" class="sep">|</span>
+              <button class="btn-link" type="button" @click="exporting = paper">导出</button>
             </td>
           </tr>
           <tr v-if="!papers.length"><td colspan="7"><p class="empty">暂无试卷</p></td></tr>
@@ -376,5 +405,11 @@ async function publish(paper: Paper) {
         <footer><button class="btn btn-primary" type="button" @click="previewOpen = false">知道了</button></footer>
       </div>
     </div>
+
+    <!-- 自动组卷。只把抽中的题目填进上面的「试卷内容」，保存仍走「保存草稿」 -->
+    <AutoComposeModal v-if="autoOpen" :points="points" @close="autoOpen = false" @apply="applyPlan" />
+
+    <!-- 试卷导出。预览与下载用的是同一份内容 -->
+    <PaperExportModal v-if="exporting" :paper="exporting" @close="exporting = null" />
   </section>
 </template>

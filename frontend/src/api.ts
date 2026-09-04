@@ -265,9 +265,183 @@ export interface AiDraftResult {
   warnings: string[]
 }
 
+/** 单行导入结果的三种去向。 */
+export type ImportOutcome = 'IMPORTED' | 'SKIPPED' | 'FAILED'
+
+/**
+ * 批量导入的单行结果。
+ *
+ * `line` 是原文行号（含表头行），与教师在 Excel 里看到的行号一致——错误提示只有落到
+ * 具体行号上才有用。`questionId` 只在真正写库后才有值，预览阶段一律为 null。
+ */
+export interface ImportRow {
+  line: number
+  outcome: ImportOutcome
+  stem: string | null
+  type: QuestionType | null
+  questionId: number | null
+  message: string | null
+}
+
+/**
+ * 批量导入结果。
+ *
+ * `dryRun` 为 true 表示这是预览，`imported` 是「可导入的行数」而不是已写入的行数。
+ * 三个计数分开给：跳过的行既不是成功也不是失败，通常意味着同一个文件导了两次。
+ */
+export interface ImportResult {
+  dryRun: boolean
+  total: number
+  imported: number
+  skipped: number
+  failed: number
+  rows: ImportRow[]
+}
+
+/**
+ * 一条自动组卷规则。三个筛选维度都可为 null，表示「不限」。
+ *
+ * `count` 是抽几道，`score` 是这条规则抽中的每道题在本试卷中的分值。
+ */
+export interface AutoComposeRule {
+  type: QuestionType | null
+  difficulty: Difficulty | null
+  knowledgePointId: number | null
+  count: number
+  score: number
+}
+
+/** 单条规则的执行结果。`poolSize` 是候选池大小，等于 count 时说明这条规则没有随机空间。 */
+export interface AutoComposeRuleResult {
+  ruleIndex: number
+  label: string
+  count: number
+  poolSize: number
+  score: number
+  subtotal: number
+}
+
+/** 方案里抽中的一道题。内嵌完整题目，前端因此可以直接填进组卷页。 */
+export interface AutoComposePlanItem { ruleIndex: number; score: number; question: Question }
+
+/**
+ * 自动组卷方案。
+ *
+ * 只是方案，服务端没有写任何数据：教师确认后仍走 createPaper 保存，
+ * 因此分值校验、题目归属和启用状态的校验只有一处实现。
+ */
+export interface AutoComposePlan {
+  questionCount: number
+  totalScore: number
+  rules: AutoComposeRuleResult[]
+  items: AutoComposePlanItem[]
+}
+
+/** 试卷导出格式：md 是可打印试卷，csv 的列名与题库导入模板一致，可回导。 */
+export type ExportFormat = 'md' | 'csv'
+
+/**
+ * 错题本里的一道题。
+ *
+ * 只来自**已公布成绩**的考试，因此带标准答案和解析是正当的。
+ * `blank` 区分「没答」和「答错」，`mastered` 表示最近一次重练已答对。
+ */
+export interface WrongQuestion {
+  answerId: number
+  submissionId: number
+  paperQuestionId: number
+  examId: number
+  examName: string
+  displayOrder: number
+  type: QuestionType
+  stem: string
+  options: Option[] | null
+  maxScore: number
+  score: number
+  myAnswer: unknown
+  standardAnswer: unknown
+  explanation: string | null
+  gradingComment: string | null
+  submittedAt: string | null
+  subjective: boolean
+  blank: boolean
+  practiceCount: number
+  lastCorrect: boolean | null
+  lastPracticedAt: string | null
+  mastered: boolean
+}
+
+/** 错题本。`practiceBatchSize` 来自系统设置，决定一次重练取几道。 */
+export interface WrongBook {
+  total: number
+  objectiveCount: number
+  subjectiveCount: number
+  masteredCount: number
+  practiceBatchSize: number
+  items: WrongQuestion[]
+}
+
+/**
+ * 练习集里的一道题。
+ *
+ * 字段刻意比错题本少：没有 standardAnswer、explanation，也没有上次的错误作答——
+ * 否则重练就变成抄一遍答案。答案只在提交之后返回。
+ */
+export interface PracticeQuestion {
+  paperQuestionId: number
+  type: QuestionType
+  stem: string
+  options: Option[] | null
+  maxScore: number
+  examName: string
+  practiceCount: number
+}
+
+/** 一组练习题。 */
+export interface PracticeSet { size: number; questions: PracticeQuestion[] }
+
+/** 一道练习题的判分结果。到这一步才给出标准答案与解析。 */
+export interface PracticeAnswerResult {
+  paperQuestionId: number
+  stem: string
+  correct: boolean
+  myAnswer: unknown
+  standardAnswer: unknown
+  explanation: string | null
+}
+
+/** 一次练习的整体结果。判分复用交卷时的同一套规则，且不改动任何成绩。 */
+export interface PracticeResult {
+  total: number
+  correctCount: number
+  accuracy: number | null
+  answers: PracticeAnswerResult[]
+}
+
+/**
+ * 一个可编辑的系统设置项。
+ *
+ * `value` 是当前生效值，`defaultValue` 是环境变量给的默认值，`overridden` 表示当前值来自数据库覆盖。
+ * 三者都给出来，管理员才能看出哪一项改过、改回默认会变成什么。
+ */
+export interface SettingItem {
+  key: string
+  label: string
+  group: string
+  type: 'INTEGER' | 'DECIMAL' | 'BOOLEAN'
+  value: string
+  defaultValue: string
+  overridden: boolean
+  min: number | null
+  max: number | null
+  unit: string
+  description: string
+  updatedAt: string | null
+  updatedBy: string | null
+}
+
 /** 通用分组计数。题型、难度、知识点三种分布共用一个结构，图表组件因此只需要一套渲染逻辑。 */
 export interface GroupCount { key: string; label: string; count: number }
-
 /** 题库概况。`byType` 与 `byDifficulty` 由后端补齐计数为 0 的分组并固定顺序，前端直接按顺序渲染。 */
 export interface BankOverview {
   total: number
@@ -341,10 +515,14 @@ export interface ExamAnalysis {
 /**
  * 系统设置：当前进程真正生效的运行参数，只读。
  *
- * `ai.configured` 是布尔值而不是密钥：密钥只存在于后端环境变量，任何接口都不下发。
+ * 分两半：`editable` 是可修改项（改完立刻生效），其余五组只读。
+ * `ai.configured` 是布尔值而不是密钥：密钥只存在于后端环境变量，任何接口都不下发，
+ * 也不在可编辑白名单里。
  * `database.schemaVersion` 为 null 表示没有 Flyway 迁移历史（例如自动化测试用的 H2 手写 schema）。
  */
 export interface SystemSettings {
+  /** 可由管理员修改的运行参数；教师只读。白名单在后端 SettingsCatalog 里固定。 */
+  editable: SettingItem[]
   runtime: { service: string; springBootVersion: string; javaVersion: string; serverTimeZone: string; serverTime: string }
   security: { tokenType: string; accessTokenMinutes: number; passwordAlgorithm: string; tokenRevocable: boolean }
   exam: { autoSubmitIntervalMs: number; passRatioPercent: number; rankingRule: string; partialCreditRule: string }
@@ -414,6 +592,23 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string):
   return ((await response.json()) as { data: T }).data
 }
 
+/**
+ * 取纯文本响应，用于下载 CSV 模板这类不套 `data` 包装的接口。
+ *
+ * 单独写一个而不是给 `request` 加开关：两者的成功分支完全不同（一个解包 JSON、一个取文本），
+ * 而失败分支要保持一致——模板接口的 401/403 也必须触发同一套登录态清理。
+ */
+async function requestText(path: string, token?: string): Promise<string> {
+  const headers = new Headers()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const response = await fetch(`${baseUrl}${path}`, { headers })
+  if (!response.ok) {
+    if (response.status === 401 && token) onUnauthorized?.()
+    throw new Error(`下载失败（${response.status}）`)
+  }
+  return response.text()
+}
+
 /** 拼查询串，跳过空值。空字符串也跳过，这样「全部」筛选项不会变成 `type=` 这种无意义参数。 */
 function query(params: Record<string, string | number | undefined | null>) {
   const search = new URLSearchParams()
@@ -470,6 +665,17 @@ export const api = {
   deleteQuestion: (token: string, id: number) =>
     request<void>(`/v1/questions/${id}`, { method: 'DELETE' }, token),
 
+  /**
+   * 批量导入题库。`dryRun` 为 true 时只预览，服务端不写任何数据。
+   *
+   * 提交的是表格文本而不是文件：读文件和直接粘贴走同一个接口，行为完全一致。
+   * 预览与导入用的是服务端同一段代码，只差最后一步写不写库。
+   */
+  importQuestions: (token: string, body: { content: string; dryRun: boolean }) =>
+    request<ImportResult>('/v1/questions/import', { method: 'POST', body: JSON.stringify(body) }, token),
+  /** 下载导入模板（带 BOM 的 CSV 文本），由后端生成以保证表头与解析器一致。 */
+  importTemplate: (token: string) => requestText('/v1/questions/import/template', token),
+
   papers: (token: string) => request<Paper[]>('/v1/papers', {}, token),
   paper: (token: string, id: number) => request<Paper>(`/v1/papers/${id}`, {}, token),
   /** 创建试卷草稿。totalScore 必须严格等于各题分值之和，否则后端返回 PAPER_SCORE_MISMATCH。 */
@@ -480,6 +686,24 @@ export const api = {
   /** 发布试卷。发布后不可修改，只能重新组一份新的。 */
   publishPaper: (token: string, id: number) =>
     request<Paper>(`/v1/papers/${id}/publish`, { method: 'POST' }, token),
+  /**
+   * 按规则自动抽题，返回一份组卷方案。
+   *
+   * 服务端只抽题、不写库：方案由前端填进组卷页，保存仍走 createPaper。
+   * 反复调用会得到不同的随机结果，相当于「换一批」。
+   */
+  autoComposePaper: (token: string, rules: AutoComposeRule[]) =>
+    request<AutoComposePlan>('/v1/papers/auto-compose', {
+      method: 'POST',
+      body: JSON.stringify({ rules }),
+    }, token),
+  /**
+   * 导出试卷正文。返回纯文本，由调用方决定预览还是下载。
+   *
+   * `withAnswers` 只对 md 生效：csv 的列名与题库导入模板一致，那里「标准答案」是必填列。
+   */
+  exportPaper: (token: string, id: number, format: ExportFormat, withAnswers: boolean) =>
+    requestText(`/v1/papers/${id}/export${query({ format, withAnswers: String(withAnswers) })}`, token),
 
   /** 考试列表。同一个接口按角色返回不同内容：教师看自己创建的，学生看已发布的。 */
   exams: (token: string) => request<Exam[]>('/v1/exams', {}, token),
@@ -529,14 +753,48 @@ export const api = {
   /** 单场考试的成绩分布与逐题正确率。整体统计与成绩管理页同源，不会出现两套数字。 */
   examAnalysis: (token: string, examId: number) =>
     request<ExamAnalysis>(`/v1/stats/exams/${examId}`, {}, token),
-  /** 系统设置：只读的运行时信息，教师与管理员都可访问；响应不含任何密钥。 */
+  /** 系统设置：运行时信息与可编辑项，教师与管理员都可读；响应不含任何密钥。 */
   systemSettings: (token: string) => request<SystemSettings>('/v1/system/settings', {}, token),
+  /**
+   * 修改系统设置，仅管理员。
+   *
+   * 值传空串表示恢复默认（删除数据库里的覆盖行）。只需提交要改的键；
+   * 一次提交里有一项越界则整批不生效，返回修改后的完整视图。
+   */
+  updateSettings: (token: string, values: Record<string, string>) =>
+    request<{ changed: number; settings: SystemSettings }>('/v1/system/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ values }),
+    }, token),
 
   /** 学生查看本人已公布的成绩列表。 */
   myResults: (token: string) => request<MyResult[]>('/v1/my/results', {}, token),
   /** 学生查看本人某份答卷的完整详情，含标准答案、解析和教师评语。 */
   myResult: (token: string, submissionId: number) =>
     request<SubmissionDetail>(`/v1/my/results/${submissionId}`, {}, token),
+
+  /** 错题本：本人在已公布成绩的考试里未得满分的题目，含标准答案与解析，用于复习。 */
+  wrongBook: (token: string) => request<WrongBook>('/v1/my/wrong-questions', {}, token),
+  /**
+   * 取一组重练题目。
+   *
+   * 响应里没有标准答案和解析——否则重练就是抄答案。只返回可自动判分的客观题。
+   */
+  practiceSet: (token: string, params: { size?: number; onlyUnmastered?: boolean } = {}) =>
+    request<PracticeSet>(`/v1/my/wrong-questions/practice${query({
+      size: params.size,
+      onlyUnmastered: params.onlyUnmastered === undefined ? undefined : String(params.onlyUnmastered),
+    })}`, {}, token),
+  /**
+   * 提交重练作答并即时判分。
+   *
+   * 判分复用交卷时的同一套客观题规则；练习记录写在独立的表里，不改动答卷与成绩。
+   */
+  submitPractice: (token: string, answers: { paperQuestionId: number; answerContent: unknown }[]) =>
+    request<PracticeResult>('/v1/my/wrong-questions/practice', {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }, token),
 
   /**
    * 生成题目草稿。草稿不入库：教师确认后仍走 createQuestion 保存。

@@ -30,13 +30,19 @@ smart-exam-platform/
 └── .env.example               无敏感信息的配置示例
 ```
 
-后端按 `auth`、`user`、`question`、`exam`、`ai`、`stats`、`system`、`common` 业务模块组织；模块内包含接口、服务、持久化和模型。
+后端按 `auth`、`user`、`question`、`exam`、`practice`、`ai`、`stats`、`system`、`common` 业务模块组织；模块内包含接口、服务、持久化和模型。
 
 `ai` 模块只依赖 `question` 的校验入口，不直连数据库：它把模型输出组装成题目请求后交给 `QuestionService` 校验，保存仍走题目新增接口。协议适配（OpenAI 兼容 / Anthropic Messages）与 HTTP 超时配置分成 `RestAiClient` 和 `AiHttpConfig` 两处，前者只管「拼请求、取文本」，后者只管连接参数，测试可以替换其中任意一层。
 
 `stats` 模块同样是只读的上层模块：单场考试的平均分、最高分、及格率和排名直接调用 `GradingService#results`，因此「谁能看这场考试」的归属校验和成绩口径都只有一处实现，成绩管理页与统计分析页不可能出现两套数字。它自己只负责两件独有的事——把已评完的总分分桶成分布，把逐题作答聚合成正确率；聚合放在 Java 而不是 SQL，原因是「是否留空」要判断 JSON 内容，MySQL 与 H2 的 JSON 函数不通用。
 
-`system` 模块除健康检查外提供只读的系统设置：返回当前进程真正生效的运行参数，用于现场核对环境，响应不含任何密钥、密码或连接串。
+`practice` 模块（错题本与错题重练）也是只读上层模块 + 一张独立表：错题的定义（本人、已公布成绩、未得满分）只在 `PracticeRepository` 里写一次，三个查询共用；判分复用从 `ExamService` 抽出的 `ObjectiveGrader`，与交卷判分是同一份实现，避免出现「考试判错、重练判对」。练习记录写在独立的 `practice_attempt` 表，**不碰 `submission` 与 `submission_answer` 的任何字段**——已公布的成绩不能被学生自己的练习改写。
+
+试卷相关的两个上层能力同样不新增写入路径：`PaperAutoComposeService`（规则自动组卷）只读题库并返回方案，保存仍走 `ExamService#createPaper`；`PaperExportService`（试卷导出）只读试卷快照并生成文本，其中 CSV 的列名与题库导入模板逐字一致，因此导出的文件可以原样回导。加上 AI 草稿与批量导入，题库和试卷各自都只有一条写入路径。
+
+`system` 模块除健康检查外提供系统设置：返回当前进程真正生效的运行参数，用于现场核对环境；其中白名单内的六项允许管理员修改（写接口限管理员，教师只读），响应不含任何密钥、密码或连接串。
+
+设置的读写实现放在 `common.SettingsStore` 与 `common.SettingsCatalog` 而不是 `system` 模块里：及格线、导入上限这些参数的**使用方**分散在 `exam`、`question`、`practice`、`auth` 四个模块，把存取放进 `common`（与 `DomainException`、`PageResult` 同级的横切设施）可以让各业务模块只依赖 `common`，不必反向依赖 `system`。模型是「环境变量是默认值，`system_setting` 表是覆盖层」，读取路径就是生效路径，因此界面上不会出现「改完不生效」。
 
 ## 3. 运行与配置策略
 

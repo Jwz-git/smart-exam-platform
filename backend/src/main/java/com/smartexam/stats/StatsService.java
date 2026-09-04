@@ -101,7 +101,7 @@ public class StatsService {
     public ExamAnalysisView examAnalysis(long examId, long teacherId) {
         ExamResultsView results = grading.results(examId, teacherId);
         BigDecimal total = results.paperTotalScore();
-        BigDecimal passScore = total.multiply(GradingService.PASS_RATIO).setScale(1, RoundingMode.HALF_UP);
+        BigDecimal passScore = total.multiply(grading.passRatio()).setScale(1, RoundingMode.HALF_UP);
         return new ExamAnalysisView(results.examId(), results.examName(), results.examStatus(),
                 results.resultsPublished(), total, passScore, repository.submissionCount(examId),
                 results.gradedCount(), results.averageScore(), results.highestScore(), results.lowestScore(),

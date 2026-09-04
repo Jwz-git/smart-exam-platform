@@ -2,6 +2,8 @@ package com.smartexam.question;
 
 import com.smartexam.common.ApiResponse;
 import com.smartexam.common.PageResult;
+import com.smartexam.question.QuestionImportModels.ImportRequest;
+import com.smartexam.question.QuestionImportModels.ImportResult;
 import com.smartexam.question.QuestionModels.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -25,8 +27,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/questions")
 public class QuestionController {
     private final QuestionService service;
+    private final QuestionImportService importService;
 
-    public QuestionController(QuestionService service) { this.service = service; }
+    public QuestionController(QuestionService service, QuestionImportService importService) {
+        this.service = service; this.importService = importService;
+    }
 
     /**
      * 分页查询本人题目，支持关键词、题型、难度、知识点和状态筛选。
@@ -82,6 +87,39 @@ public class QuestionController {
     public ResponseEntity<Void> delete(@PathVariable long id, @AuthenticationPrincipal Jwt jwt) {
         service.delete(id, userId(jwt));
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 批量导入题库：预览或写入。
+     *
+     * <p>请求体是<b>表格文本</b>而不是 multipart 文件。这样后端不必处理上传大小、临时文件和
+     * 文件名编码，前端读文件与直接粘贴表格共用同一个接口，行为完全一致；
+     * 代价是导入内容必须能放进一个 JSON 请求体，因此长度上限写在了请求模型上。
+     *
+     * <p>{@code dryRun} 不传按预览处理，写库必须显式传 {@code false}——
+     * 漏传参数不应该导致几十道题直接进库。
+     *
+     * <p>路径放在 {@code /questions} 下面是为了继承 {@code SecurityConfig} 里
+     * 「{@code /api/v1/questions/**} 仅教师」的规则，不需要额外的方法级注解。
+     */
+    @PostMapping("/import")
+    public ApiResponse<ImportResult> importQuestions(@Valid @RequestBody ImportRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ApiResponse.of(importService.run(request, userId(jwt)));
+    }
+
+    /**
+     * 下载导入模板。
+     *
+     * <p>返回 {@code text/csv} 而不是包在 {@code data} 里的 JSON：这是一份要交给 Excel 打开的文件。
+     * 正文带 UTF-8 BOM，否则 Excel 会把中文表头显示成乱码。模板由解析器所在的类生成，
+     * 保证「模板里的表头」与「解析器认识的列名」不会各自漂移。
+     */
+    @GetMapping(value = "/import/template", produces = "text/csv;charset=UTF-8")
+    public ResponseEntity<String> importTemplate() {
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"question-import-template.csv\"")
+                .body(importService.template());
     }
 
     /**

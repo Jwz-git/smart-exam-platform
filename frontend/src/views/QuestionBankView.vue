@@ -11,6 +11,7 @@ import { onMounted, reactive, ref, watch } from 'vue'
 import PagerBar from '../components/PagerBar.vue'
 import AiDraftModal from './AiDraftModal.vue'
 import QuestionFormModal from './QuestionFormModal.vue'
+import QuestionImportModal from './QuestionImportModal.vue'
 import {
   api, difficultyLabels, typeLabels,
   type KnowledgePoint, type Question, type QuestionPayload,
@@ -33,6 +34,8 @@ const editorOpen = ref(false)
 const editing = ref<Question | null>(null)
 /** AI 出题弹窗是否打开。 */
 const aiOpen = ref(false)
+/** 批量导入弹窗是否打开。 */
+const importOpen = ref(false)
 /** 从 AI 草稿预填到表单的内容；为 null 表示这次不是从草稿来的。 */
 const prefill = ref<QuestionPayload | null>(null)
 /** 弹窗组件引用，用于把保存失败的后端错误回填到弹窗里显示。 */
@@ -107,6 +110,30 @@ function openAi() {
   error.value = ''
   notice.value = ''
   aiOpen.value = true
+}
+
+/**
+ * 打开批量导入弹窗。
+ *
+ * 同样要求先有知识点：导入按名称匹配知识点且不会自动创建，题库里一个知识点都没有时
+ * 每一行都会失败，不如在这里直接说清楚。
+ */
+function openImport() {
+  if (!points.value.length) { error.value = '请先添加一个知识点，再导入题库。'; return }
+  error.value = ''
+  notice.value = ''
+  importOpen.value = true
+}
+
+/**
+ * 导入完成后刷新列表。
+ *
+ * 弹窗刻意不关：结果表里还有「哪几行跳过、哪几行失败」需要教师看完，
+ * 关掉就等于把这些信息丢了。
+ */
+async function onImported(count: number) {
+  notice.value = count > 0 ? `已导入 ${count} 道题目到题库。` : '本次没有新增题目，请看结果表里的原因。'
+  await load()
 }
 
 /**
@@ -207,7 +234,8 @@ function tagsOf(question: Question) {
     <div class="page-head">
       <h2>题库管理</h2>
       <span class="spacer" />
-      <!-- AI 出题放在新增左边：它是可选的辅助入口，主按钮仍然是手工新增 -->
+      <!-- 批量导入与 AI 出题都放在新增左边：它们是可选的辅助入口，主按钮仍然是手工新增 -->
+      <button class="btn" type="button" @click="openImport">导入题库</button>
       <button class="btn" type="button" @click="openAi">AI 出题</button>
       <button class="btn btn-primary" type="button" @click="openCreate">新增题目</button>
     </div>
@@ -323,5 +351,8 @@ function tagsOf(question: Question) {
 
     <!-- AI 出题弹窗。草稿在这里预览，采用后进入上面的表单再确认保存 -->
     <AiDraftModal v-if="aiOpen" :points="points" @close="aiOpen = false" @adopt="adoptDraft" />
+
+    <!-- 批量导入弹窗。先预览再确认，导入后由 onImported 刷新列表 -->
+    <QuestionImportModal v-if="importOpen" @close="importOpen = false" @imported="onImported" />
   </section>
 </template>
