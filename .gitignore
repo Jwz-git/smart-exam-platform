@@ -63,3 +63,4 @@ tmp/
 *.pid
 
 .playwright-mcp/
+.claude/

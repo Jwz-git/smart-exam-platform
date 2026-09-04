@@ -1,3 +1,5 @@
+-- 用户主表：统一保存管理员、教师和学生账号，具体权限由 role 区分。
+-- username 的唯一约束既用于登录定位，也防止创建重名账号。
 CREATE TABLE app_user (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     username VARCHAR(64) NOT NULL,
@@ -11,6 +13,7 @@ CREATE TABLE app_user (
     UNIQUE KEY uk_app_user_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 知识点表：为题目提供可维护的分类维度，并记录创建人以便追溯。
 CREATE TABLE knowledge_point (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -22,6 +25,9 @@ CREATE TABLE knowledge_point (
     CONSTRAINT fk_knowledge_point_creator FOREIGN KEY (created_by) REFERENCES app_user (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 题库主表：保存题干、标准答案、难度及当前可用状态。
+-- standard_answer 使用 JSON，以兼容单值答案、多选集合及主观题参考答案。
+-- 组合索引覆盖题库列表最常用的题型、难度、知识点和状态筛选。
 CREATE TABLE question (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     type ENUM('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER') NOT NULL,
@@ -42,6 +48,7 @@ CREATE TABLE question (
     CONSTRAINT fk_question_creator FOREIGN KEY (created_by) REFERENCES app_user (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 客观题选项表：选项标识和展示顺序在同一道题内分别保持唯一。
 CREATE TABLE question_option (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     question_id BIGINT UNSIGNED NOT NULL,
@@ -54,6 +61,7 @@ CREATE TABLE question_option (
     CONSTRAINT fk_question_option_question FOREIGN KEY (question_id) REFERENCES question (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 试卷主表：total_score 由试卷题目分值汇总，发布后不直接修改内容。
 CREATE TABLE paper (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(150) NOT NULL,
@@ -69,6 +77,9 @@ CREATE TABLE paper (
     CONSTRAINT fk_paper_creator FOREIGN KEY (created_by) REFERENCES app_user (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 试卷题目表：连接试卷与题库，并冻结发布时的题型、题干、选项、答案和解析。
+-- 快照避免后续编辑或停用题库原题时改变历史试卷及判分依据。
+-- 同一试卷内题序和原题均唯一，防止重复选题或出现相同序号。
 CREATE TABLE paper_question (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     paper_id BIGINT UNSIGNED NOT NULL,
@@ -88,6 +99,8 @@ CREATE TABLE paper_question (
     CONSTRAINT fk_paper_question_question FOREIGN KEY (question_id) REFERENCES question (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 考试表：绑定一份试卷，保存开放时间、业务状态及成绩公布时间。
+-- 时间范围检查确保截止时间严格晚于开始时间。
 CREATE TABLE exam (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(150) NOT NULL,
@@ -106,6 +119,9 @@ CREATE TABLE exam (
     CONSTRAINT fk_exam_creator FOREIGN KEY (created_by) REFERENCES app_user (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 学生答卷表：记录考试过程、提交状态以及客观/主观/总分汇总。
+-- exam_id + student_id 唯一约束是防止同一学生重复生成有效答卷的数据库兜底。
+-- version 随交卷和评分更新递增，用于追踪答卷状态被持久化修改的次数。
 CREATE TABLE submission (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     exam_id BIGINT UNSIGNED NOT NULL,
@@ -124,6 +140,8 @@ CREATE TABLE submission (
     CONSTRAINT fk_submission_student FOREIGN KEY (student_id) REFERENCES app_user (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 逐题答案表：保存学生答案、该题得分以及教师批阅痕迹。
+-- 每份答卷对每道试卷题只保留一条记录，重复保存应更新原记录。
 CREATE TABLE submission_answer (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     submission_id BIGINT UNSIGNED NOT NULL,

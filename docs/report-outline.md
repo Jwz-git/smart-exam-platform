@@ -1,23 +1,25 @@
 # 项目报告提纲与素材索引
 
+> **报告正文已完成**：[`docs/project-report.md`](project-report.md)（项目报告）与 [`docs/ideological-report.md`](ideological-report.md)（思政报告，正文约 5100 字、参考文献 12 篇）。本文件保留为素材索引与答辩问答手册，写报告时的取材依据仍在这里。
+
 课程要求的项目报告分五节（见 [`软件开发实践2_文字整理.md`](../软件开发实践2_文字整理.md#项目报告)）。本文件把每节该写什么、素材在仓库哪个文件、还缺什么列清楚，写报告时按表格取材即可，不必再回头翻代码。
 
-**评价要点**（决定分数的地方）：文档质量、设计方案质量、任务分工合理性、是否具有创新性、**对程序运行结果的分析**、项目实施思考。最后两项最容易被忽略，第 6、7 节专门准备了素材。
+**评价要点**（决定分数的地方）：文档质量、设计方案质量、任务分工合理性、是否具有创新性、**对程序运行结果的分析**、项目实施思考。最后两项最容易被忽略，第 6、7 节专门准备了素材，正文中已分别落到 [`project-report.md` 第 5 节](project-report.md#5-运行结果分析)与第 8 节。
 
 ## 1. 素材索引
 
 | 报告章节 | 主要素材 | 状态 |
 |---|---|---|
-| 项目背景 | [`docs/requirements-analysis.md` 第 6 节](requirements-analysis.md#6-竞品参考) 已有 Moodle Quiz、Canvas New Quizzes、Google Forms Quiz 三款竞品的能力对比与借鉴取舍，附官方文档链接 | 文字齐备；**缺竞品截图**，需从官方页面采集并注明日期 |
-| 组内分工 | 项目实际由一人完成，见 [`plan.md` 第 5 节](../plan.md#5-单人执行方式) | **需你自己决定如何呈现**（见下方说明） |
-| 需求分析 | [`docs/requirements-analysis.md`](requirements-analysis.md)：角色与目标、功能需求表、核心业务流程图（Mermaid）、关键状态与异常、验收数据 | 齐备 |
-| 设计文档 · 原型 | [`docs/prototype.md`](prototype.md) + [`docs/images/界面原型设计.png`](images/界面原型设计.png) | 齐备 |
-| 设计文档 · 架构 | [`docs/technical-design.md`](technical-design.md)：版本基线、目录结构、配置策略、模块边界 | 齐备 |
-| 设计文档 · API | [`docs/api.md`](api.md)：统一响应与错误约定、接口清单、幂等与冲突规则、各模块业务约定 | 齐备 |
-| 设计文档 · 数据库 | [`docs/database-design.md`](database-design.md)：ER 图（Mermaid）、设计约束、迁移策略 | 齐备 |
-| 系统演示 | [`docs/demo-script.md`](demo-script.md)：完整动线、每步预期结果、可讲的设计理由 | 文字齐备；**缺页面截图**，需按脚本走一遍并逐步截图 |
-| 运行结果分析 | [`docs/test-records.md`](test-records.md)：9 项验收用例逐项结果、36+25 项自动化清单、注释比例、未覆盖范围；逐题正确率与得分率的解释见本文件第 6 节 | 齐备 |
-| 心得体会 | 本文件第 7 节 | 素材齐备，需你改写成第一人称 |
+| 项目背景 | [`docs/requirements-analysis.md` 第 6 节](requirements-analysis.md#6-竞品参考) 已有 Moodle Quiz、Canvas New Quizzes、Google Forms Quiz 三款竞品的能力对比与借鉴取舍，附官方文档链接 | 已写入正文 1.2；竞品截图未采集（正文改用「官方页面可复核的能力」表格 + 链接，不放第三方界面截图） |
+| 组内分工 | 项目实际由一人完成，见 [`plan.md` 第 5 节](../plan.md#5-单人执行方式) | 已写入正文 1.3：按五个角色拆分工时占比，并说明单人开发的四层证据 |
+| 需求分析 | [`docs/requirements-analysis.md`](requirements-analysis.md)：角色与目标、功能需求表、核心业务流程图（Mermaid）、关键状态与异常、验收数据 | 已写入正文第 2 节 |
+| 设计文档 · 原型 | [`docs/prototype.md`](prototype.md) + [`docs/images/界面原型设计.png`](images/界面原型设计.png) | 已写入正文 3.3 |
+| 设计文档 · 架构 | [`docs/technical-design.md`](technical-design.md)：版本基线、目录结构、配置策略、模块边界 | 已写入正文 3.1—3.2 |
+| 设计文档 · API | [`docs/api.md`](api.md)：统一响应与错误约定、接口清单、幂等与冲突规则、各模块业务约定 | 已写入正文 3.4 |
+| 设计文档 · 数据库 | [`docs/database-design.md`](database-design.md)：ER 图（Mermaid）、设计约束、迁移策略 | 已写入正文 3.5 |
+| 系统演示 | [`docs/demo-script.md`](demo-script.md)：完整动线、每步预期结果、可讲的设计理由 | **截图已采集**：27 张存于 [`images/screenshots/`](images/screenshots/)，已按演示顺序嵌入正文第 4 节 |
+| 运行结果分析 | [`docs/test-records.md`](test-records.md)：9 项验收用例逐项结果、36+25 项自动化清单、真实环境走查、注释比例、未覆盖范围；逐题正确率与得分率的解释见本文件第 6 节 | 已写入正文第 5 节 |
+| 心得体会 | 本文件第 7 节 | 已写入正文第 8 节（含走查阶段新增的「测试通过 ≠ 可以交付」一条） |
 
 ### 关于「组内分工」
 

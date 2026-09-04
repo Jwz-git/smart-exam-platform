@@ -29,19 +29,24 @@
 
 ## 仓库现状
 
-MVP 闭环已全部打通：三类账号登录与 JWT 鉴权、教师题库、手动组卷、考试发布、学生答题与刷新恢复、交卷与客观题判分、超时自动交卷、主观题阅卷、成绩汇总与公布、竞赛排名、学生本人查分，以及管理员的用户查询、新增和启用停用。增强功能已实现三项：AI 辅助出题（OpenAI 兼容与 Anthropic 两种协议）、统计分析（题库分布、成绩分布、逐题正确率）和只读系统设置；侧栏不再有未开放入口。剩余工作是阶段 4 的收尾：真实 MySQL 8.4 空库迁移、Chrome 走查截图、干净环境启动验证与报告正文。
+MVP 闭环已全部打通：三类账号登录与 JWT 鉴权、教师题库、手动组卷、考试发布、学生答题与刷新恢复、交卷与客观题判分、超时自动交卷、主观题阅卷、成绩汇总与公布、竞赛排名、学生本人查分，以及管理员的用户查询、新增和启用停用。增强功能已实现三项：AI 辅助出题（OpenAI 兼容与 Anthropic 两种协议，已在真实服务商上联调通过）、统计分析（题库分布、成绩分布、逐题正确率）和只读系统设置；侧栏不再有未开放入口。
+
+2026-09-04 完成最新版 Chrome 完整走查，留存 27 张截图并修复走查中发现的 6 个界面缺陷；全部验收数字已在真实 MySQL 上复现；项目报告与思政报告正文已完成。剩余待办只有两项需要特定环境：MySQL 8.4 空库跑一次 Flyway、从干净环境按本文档验证启动。
 
 | 文件 | 用途 |
 |---|---|
 | [`plan.md`](plan.md) | 功能范围、单人排期和验收标准 |
+| [`docs/project-report.md`](docs/project-report.md) | **项目报告**：背景与竞品、需求、设计、系统演示（27 张截图）、运行结果分析、心得体会 |
+| [`docs/ideological-report.md`](docs/ideological-report.md) | **思政报告**：科技自立、工匠精神、科技诚信、AI 边界与数据责任（约 5100 字，12 篇参考文献） |
 | [`docs/requirements-analysis.md`](docs/requirements-analysis.md) | 需求、业务流程和竞品参考 |
 | [`docs/technical-design.md`](docs/technical-design.md) | 版本基线、目录、配置策略和架构边界 |
 | [`docs/prototype.md`](docs/prototype.md) | 页面结构、高保真原型和交互状态 |
 | [`docs/database-design.md`](docs/database-design.md) | ER 关系、数据约束和迁移策略 |
 | [`docs/api.md`](docs/api.md) | REST API 清单、响应和错误约定 |
-| [`docs/test-records.md`](docs/test-records.md) | 测试记录：9 项验收结果、自动化清单、注释比例、未覆盖范围 |
+| [`docs/test-records.md`](docs/test-records.md) | 测试记录：9 项验收结果、自动化清单、真实环境走查、注释比例、未覆盖范围 |
 | [`docs/demo-script.md`](docs/demo-script.md) | 演示脚本：完整动线、每步预期结果和可讲的设计理由 |
-| [`docs/report-outline.md`](docs/report-outline.md) | 项目报告提纲与素材索引，含设计决策、关键数字和心得素材 |
+| [`docs/report-outline.md`](docs/report-outline.md) | 素材索引与答辩问答手册，含 19 条设计决策和关键数字 |
+| [`docs/images/screenshots/`](docs/images/screenshots/) | 系统演示截图 27 张，编号即演示顺序 |
 | [`软件开发实践2_文字整理.md`](软件开发实践2_文字整理.md) | 课程要求原始整理 |
 | [`AGENTS.md`](AGENTS.md) | AI 协作规则和项目现状台账 |
 | [`log.md`](log.md) | 工作记录：每次实质变更的内容、验证和下一步 |

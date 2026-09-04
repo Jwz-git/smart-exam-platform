@@ -85,8 +85,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: none;
   color: var(--brand);
   cursor: pointer;
+  /* 文字链绝不换行。作为 flex 项时它会被压缩，两字的「删除」会断成上下两行的「删」「除」，
+     在选项编辑器这类横排容器里尤其明显。 */
+  white-space: nowrap;
+  flex: none;
 }
-.btn-link:hover { text-decoration: underline; }
+.btn-link:hover:not(:disabled) { text-decoration: underline; }
+/* 表格内文字链禁用时必须看得出来。只给按钮加 :disabled 属性而样式不变的话，
+   界面上仍然是一个蓝色可点的链接（如「不能停用当前登录的账号」），
+   用户会以为是自己点歪了，而不是这条操作本身不允许。 */
+.btn-link:disabled { color: var(--muted); cursor: not-allowed; text-decoration: none; }
 .btn-link.danger { color: var(--danger); }
 
 /* ---------- 表单 ---------- */

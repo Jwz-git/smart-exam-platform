@@ -148,7 +148,8 @@ const when = (value: string) => new Date(value).toLocaleString('zh-CN', { hour12
             <td class="num">{{ exam.totalScore }}</td>
             <!-- 起止时间放同一格，教师核对时不用左右扫两列 -->
             <td class="muted">{{ when(exam.startAt) }} — {{ when(exam.endAt) }}</td>
-            <td :class="exam.status === 'PUBLISHED' ? 'state-on' : 'muted'">
+            <!-- 只有草稿是灰色；已发布及其后的状态（如成绩已公布）都算「已生效」显示为绿色 -->
+            <td :class="exam.status === 'DRAFT' ? 'muted' : 'state-on'">
               {{ examStatusLabels[exam.status] ?? exam.status }}
             </td>
             <!-- 只有草稿有「发布」操作；已发布的考试不提供撤回，因为可能已经有学生答卷 -->

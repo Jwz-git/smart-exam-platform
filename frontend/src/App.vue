@@ -11,7 +11,7 @@
  * 没有嵌套路由和 URL 分享需求，少一个依赖也少一处需要在答辩时解释的复杂度。
  * 如果后续要支持「刷新后停留在当前页」，再引入路由更合适。
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AppSidebar, { type MenuItem } from './components/AppSidebar.vue'
 import AppTopbar from './components/AppTopbar.vue'
 import LoginView from './views/LoginView.vue'
@@ -77,6 +77,19 @@ const placeholders: Record<string, string> = {}
 
 // 启动时校验本地令牌是否仍然有效，顺便纠正被手工改过的角色信息。
 onMounted(restore)
+
+/**
+ * 换人登录时把选中项退回首页。
+ *
+ * `active` 是模块内的普通状态，退出登录不会清掉它。少了这一步，
+ * 教师停在「题库管理」退出、换管理员登录后，内容区仍然渲染题库页——
+ * 而管理员没有题库权限，一进来就是四个 403。
+ * 用 `user?.id` 而不是 `user` 本身做依赖：刷新页面时 `restore()` 会重新赋值 user 对象，
+ * 但 id 不变，不该被当成换人。
+ */
+watch(() => user.value?.id, () => {
+  active.value = 'home'
+})
 
 /** 切换视图。首页的快捷入口也通过这个函数跳转，因此需要暴露给子组件。 */
 function select(key: string) {
