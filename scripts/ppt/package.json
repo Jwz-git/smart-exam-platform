@@ -1,0 +1,9 @@
+{
+  "name": "smart-exam-ppt",
+  "private": true,
+  "version": "1.0.0",
+  "description": "答辩 PPT 生成器（pptxgenjs）。用法：npm install && node build-ppt.js",
+  "dependencies": {
+    "pptxgenjs": "4.0.1"
+  }
+}
