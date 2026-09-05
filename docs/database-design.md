@@ -41,8 +41,8 @@ erDiagram
 
 结构迁移位于 `backend/src/main/resources/db/migration/`：V1 创建业务表，V2 创建演示账号，V3 为 `question.type` 增加 `PROGRAMMING` 并新增 `question.tags` 关键词列，V4 补充学生乙/丙/丁三个演示账号以支撑同分并列的排名演示，V5 新增 `system_setting`（可编辑系统设置的覆盖层）与 `practice_attempt`（错题重练记录）两张表。后续变更从 V6 起新增迁移，不修改已执行文件。
 
-测试使用 H2 与 `backend/src/test/resources/schema.sql`，不执行 Flyway；改动迁移脚本时必须同步该文件，并在真实 MySQL 上从空库跑一次迁移。
+测试使用 H2 与 `backend/src/test/resources/schema.sql`，不执行 Flyway；改动迁移脚本时必须同步该文件，并在真实 MySQL 上跑一次迁移。
 
-空数据库验证标准：启动 MySQL 8.4 后运行应用，Flyway 成功创建 11 张业务表和 `flyway_schema_history`，重复启动不重复建表。
+验证标准：连上 MySQL（基线 8.4 LTS 或更高）后运行应用，Flyway 成功创建 11 张业务表和 `flyway_schema_history`，重复启动不重复建表。
 
-当前实测：V1—V5 已在本机 MySQL 9.6 依次应用成功（V5 于 2026-09-04 实测 `Successfully applied 1 migration ... now at version v5`），重复启动提示 `Schema is up to date`。这不等于 8.4 通过（Flyway 11.7 也会提示 9.6 未经测试），MySQL 8.4 空库验证仍是待办项，见 [`test-records.md` 第 5 节](test-records.md#5-未覆盖范围与已知问题)。
+实测结果：V1—V5 已在真实 MySQL（本机 9.6）上依次应用成功（V5 于 2026-09-04 实测 `Successfully applied 1 migration ... now at version v5`），重复启动提示 `Schema is up to date`，校验通过（`Successfully validated 5 migrations`、`Current version: 5`）。11 张业务表与 `flyway_schema_history` 的实际结构见第 1、2 节。

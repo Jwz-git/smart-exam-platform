@@ -77,4 +77,4 @@ flowchart LR
 
 已确定：版本基线、目录、配置来源、模块边界、REST/JSON、MySQL/Flyway、Vue SPA。
 
-认证使用 Spring Security Resource Server、Nimbus JOSE 和 HS256，访问令牌默认有效期 60 分钟。数据访问使用 Spring JDBC。生产域名与 HTTPS 终止方式尚未确定。
+认证使用 Spring Security Resource Server、Nimbus JOSE 和 HS256，访问令牌默认有效期 60 分钟。数据访问使用 Spring JDBC。部署形态限定为单实例本机运行（另提供可选的 Compose 数据库），生产域名与 HTTPS 终止不在本期范围内。

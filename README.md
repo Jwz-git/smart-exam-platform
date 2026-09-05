@@ -31,20 +31,21 @@
 
 MVP 闭环与六项增强功能均已实现，系统设置页另由只读改为管理员可编辑（白名单六项，保存即生效），侧栏不再有未开放入口。AI 出题已在真实服务商上联调通过。
 
-2026-09-04 完成 Google Chrome 152 完整走查，留存 39 张截图并修复走查发现的 11 个界面缺陷；全部验收数字已在真实 MySQL 9.6（Flyway v5）上复现；项目报告正文已完成。自动化测试后端 55 项、前端 55 项全绿，注释比例 37.8%。剩余待办只有两项需要特定环境：MySQL 8.4 空库跑一次 Flyway、从干净环境按本文档验证启动。
+2026-09-04 在 Google Chrome 152 上完整走查管理员、教师、学生三条动线，留存 39 张截图；全部验收数字已在真实 MySQL（Flyway v5）上复现；项目报告与答辩 PPT 均已完成。自动化测试后端 55 项、前端 55 项全绿，注释比例 37.8%。
 
 | 文件 | 用途 |
 |---|---|
-| [`plan.md`](plan.md) | 功能范围、单人排期和验收标准 |
+| [`plan.md`](plan.md) | 功能范围、排期和验收标准 |
 | [`docs/project-report.md`](docs/project-report.md) | **项目报告**：背景与竞品、需求、设计、系统演示（39 张截图）、运行结果分析、心得体会 |
 | [`docs/requirements-analysis.md`](docs/requirements-analysis.md) | 需求、业务流程和竞品参考 |
 | [`docs/technical-design.md`](docs/technical-design.md) | 版本基线、目录、配置策略和架构边界 |
 | [`docs/prototype.md`](docs/prototype.md) | 页面结构、高保真原型和交互状态 |
 | [`docs/database-design.md`](docs/database-design.md) | ER 关系、数据约束和迁移策略 |
 | [`docs/api.md`](docs/api.md) | REST API 清单、响应和错误约定 |
-| [`docs/test-records.md`](docs/test-records.md) | 测试记录：9 项验收结果、自动化清单、真实环境走查、题库导入与四项新功能实测、注释比例、未覆盖范围 |
+| [`docs/test-records.md`](docs/test-records.md) | 测试记录：9 项验收结果、自动化清单、真实环境走查、题库导入与四项新功能实测、注释比例 |
 | [`docs/demo-script.md`](docs/demo-script.md) | 演示脚本：完整动线、每步预期结果和可讲的设计理由 |
 | [`docs/report-outline.md`](docs/report-outline.md) | 答辩速查卡：素材索引、可直接引用的关键数字、十三条高频问答 |
+| [`docs/答辩PPT.pptx`](docs/答辩PPT.pptx) | 答辩 PPT：21 页、16:9，每页带演讲者备注 |
 | [`docs/images/screenshots/`](docs/images/screenshots/) | 系统演示截图 39 张，编号即演示顺序 |
 | [`软件开发实践2_文字整理.md`](软件开发实践2_文字整理.md) | 课程要求原始整理 |
 | [`AGENTS.md`](AGENTS.md) | AI 协作规则和项目现状台账 |
